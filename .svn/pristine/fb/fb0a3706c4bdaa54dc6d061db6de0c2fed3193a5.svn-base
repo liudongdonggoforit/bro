@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.sh.browser">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- 硬件加速对X5视频播放非常重要，建议开启 -->
+    <uses-permission android:name="android.permission.GET_TASKS" />
+
+    <application
+        android:name=".UCAppliCation"
+        android:allowBackup="true"
+        android:icon="@mipmap/logo"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/logo"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".activities.MainActivity"></activity>
+
+        <activity
+            android:name=".activities.SplashActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:hardwareAccelerated="false"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".activities.MainActivity_F">
+
+        </activity>
+
+        <activity
+            android:name=".activities.Main"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:hardwareAccelerated="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+
+            <intent-filter android:icon="@mipmap/ic_launcher">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.WEB_SEARCH" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+
+                <action android:name="sc_startPage" />
+                <action android:name="sc_login" />
+                <action android:name="sc_bookmark" />
+                <action android:name="sc_history" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!-- Holder -->
+        <activity
+            android:name="com.sh.browser.activities.HolderActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".activities.ArticalContentActivity"
+            android:screenOrientation="portrait"/>
+
+        <service
+            android:name=".services.HolderService"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name" />
+
+        <!-- BrowserActivity -->
+        <activity
+            android:name="com.sh.browser.activities.BrowserActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+
+            <intent-filter android:icon="@mipmap/ic_launcher">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.WEB_SEARCH" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+
+                <action android:name="sc_startPage" />
+                <action android:name="sc_login" />
+                <action android:name="sc_bookmark" />
+                <action android:name="sc_history" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!-- Settings -->
+        <activity
+            android:name="com.sh.browser.activities.Settings_Activity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/setting_label"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
+        <activity
+            android:name="com.sh.browser.activities.CollectionAndHistoryActivity"
+            android:label="@string/setting_title_whitelist"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Whitelist_AdBlock"
+            android:label="@string/setting_title_whitelist"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Whitelist_Javascript"
+            android:label="@string/setting_title_whitelistJS"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.SearchActivity"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Whitelist_Cookie"
+            android:label="@string/setting_title_whitelistCookie"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Settings_ClearActivity"
+            android:label="@string/setting_title_clear_control"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Settings_StartActivity"
+            android:label="@string/setting_title_start_control"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Settings_DataActivity"
+            android:label="@string/setting_title_data"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name="com.sh.browser.activities.Settings_UIActivity"
+            android:label="@string/setting_title_ui"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name=".activities.VideoDetailActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:screenOrientation="portrait" />
+
+        <activity
+        android:name=".activities.BigImgActivity"
+        android:configChanges="orientation|keyboardHidden|screenSize"
+        android:screenOrientation="portrait" />
+
+
+        <!--友盟-->
+        <!--sina-->
+        <activity
+            android:name="com.umeng.socialize.media.WBShareCallBackActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"></activity>
+        <activity
+            android:name="com.sina.weibo.sdk.web.WeiboSdkWebActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
+
+        </activity>
+        <activity
+            android:name="com.sina.weibo.sdk.share.WbShareTransActivity"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen">
+            <intent-filter>
+                <action android:name="com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+        </activity>
+
+        <!--wechat-->
+        <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!--qq-->
+        <activity
+            android:name="com.tencent.tauth.AuthActivity"
+            android:launchMode="singleTask"
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="101513632" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.tencent.connect.common.AssistActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+
+        <!-- ClearService | Provider-->
+        <service
+            android:name=".services.ClearService"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name" />
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="de.baumann.browser.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

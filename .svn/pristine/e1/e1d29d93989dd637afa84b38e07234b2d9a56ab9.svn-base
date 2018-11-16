@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:id="@+id/main_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="-60dp"
+        android:orientation="vertical"></LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/main_bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/colorPrimary"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/bottom_left"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="10dp"
+            android:src="@drawable/bm_back_off"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/bottom_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="10dp"
+            android:src="@drawable/bm_idv_off"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/bottom_article"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="9dp"
+            android:src="@drawable/ic_tt_off" />
+
+        <ImageView
+            android:id="@+id/bottom_video"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="9dp"
+            android:src="@drawable/ic_sp_off" />
+
+        <ImageView
+            android:id="@+id/bottom_setting"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="10dp"
+            android:src="@drawable/ic_cd_off" />
+
+        <FrameLayout
+            android:id="@+id/bottom_window"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="10dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sort_off" />
+
+            <TextView
+                android:id="@+id/bottom_window_size"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="@color/black"
+                android:textSize="9sp" />
+        </FrameLayout>
+
+        <ImageView
+            android:id="@+id/bottom_home"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onClick"
+            android:padding="10dp"
+            android:src="@drawable/ic_home_off" />
+
+    </LinearLayout>
+</RelativeLayout>

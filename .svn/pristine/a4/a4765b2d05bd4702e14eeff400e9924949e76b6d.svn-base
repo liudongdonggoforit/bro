@@ -1,0 +1,301 @@
+package com.chile.browser.fragment;
+
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.annotation.Nullable;
+import android.support.design.widget.BottomSheetDialog;
+import android.support.v7.app.AlertDialog;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.chile.browser.R;
+import com.chile.browser.activities.Main;
+import com.chile.browser.database.Record;
+import com.chile.browser.database.RecordAction;
+import com.chile.browser.dynamicgrid.DynamicGridView;
+import com.chile.browser.views.Adapter_Record;
+import com.chile.browser.views.GridItem;
+import com.chile.browser.views.NinjaToast;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+public class CommonFragment extends BaseFragment {
+    public static final String TITLE = "title";
+    private ListView home_list;
+    private DynamicGridView gridView;
+    private List<Record> list;
+    private BottomSheetDialog bottomSheetDialog;
+    private LinearLayout tv2_menu_newTab;
+    private LinearLayout tv2_menu_newTab_open;
+    private LinearLayout tv2_menu_edit;
+    private LinearLayout tv2_menu_delete;
+    private LinearLayout tv2_menu_notification;
+    private String args;
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return mView = inflater.inflate(R.layout.fragment_common, null);
+    }
+
+    @Override
+    protected void initViews() {
+        super.initViews();
+        RecordAction action = new RecordAction(mContext);
+        action.open(false);
+        args = getArguments().getString("type");
+        home_list = mView.findViewById(R.id.home_list);
+        gridView = mView.findViewById(R.id.home_grid);
+        if (args.equals("0")) {
+            list = action.listBookmarks();
+            Collections.sort(list, new Comparator<Record>() {
+                @Override
+                public int compare(Record first, Record second) {
+                    return first.getTitle().compareToIgnoreCase(second.getTitle());
+                }
+            });
+//            home_list.setVisibility(View.GONE);
+//            gridView.setVisibility(View.VISIBLE);
+//            List<GridItem> gridList = action.listGrid();
+//            action.close();
+//            GridAdapter gridAdapter = new GridAdapter(mContext, gridList, 2);
+//            gridView.setAdapter(gridAdapter);
+//            gridAdapter.notifyDataSetChanged();
+        } else {
+            list = action.listHistory();
+        }
+        home_list.setVisibility(View.VISIBLE);
+        gridView.setVisibility(View.GONE);
+        final Adapter_Record adapter = new Adapter_Record(mContext, list);
+        home_list.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+        action.close();
+
+        home_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(mContext, Main.class);
+                intent.putExtra("url", list.get(position).getURL());
+                startActivity(intent);
+            }
+        });
+
+        home_list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                showListMenu(adapter, list, position);
+                return true;
+            }
+        });
+    }
+
+    private void showListMenu(final Adapter_Record adapterRecord, final List<Record> recordList, final int location) {
+
+        final Record record = recordList.get(location);
+
+        bottomSheetDialog = new BottomSheetDialog(mContext);
+        View dialogView = View.inflate(mContext, R.layout.dialog_menu_context, null);
+
+        tv2_menu_newTab = dialogView.findViewById(R.id.tv2_menu_newTab);
+        tv2_menu_newTab.setVisibility(View.VISIBLE);
+        tv2_menu_newTab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                addAlbum(getString(R.string.album_untitled), record.getURL(), false, null);
+                NinjaToast.show(mContext, getString(R.string.toast_new_tab_successful));
+                bottomSheetDialog.cancel();
+            }
+        });
+
+        tv2_menu_newTab_open = dialogView.findViewById(R.id.tv2_menu_newTab_open);
+        tv2_menu_newTab_open.setVisibility(View.VISIBLE);
+        tv2_menu_newTab_open.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                pinAlbums(record.getURL());
+                bottomSheetDialog.cancel();
+            }
+        });
+
+        tv2_menu_delete = dialogView.findViewById(R.id.tv2_menu_delete);
+        tv2_menu_delete.setVisibility(View.VISIBLE);
+        tv2_menu_delete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bottomSheetDialog.cancel();
+                bottomSheetDialog = new BottomSheetDialog(mContext);
+                View dialogView = View.inflate(mContext, R.layout.dialog_action, null);
+                TextView textView = dialogView.findViewById(R.id.dialog_text);
+                textView.setText(R.string.toast_titleConfirm_delete);
+                Button action_ok = dialogView.findViewById(R.id.action_ok);
+                action_ok.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        RecordAction action = new RecordAction(mContext);
+                        action.open(true);
+                        if (args.equals("0")) {
+                            action.deleteBookmark(record);
+                        } else {
+                            action.deleteHistory(record);
+                        }
+                        action.close();
+                        recordList.remove(location);
+                        adapterRecord.notifyDataSetChanged();
+                        bottomSheetDialog.cancel();
+                        NinjaToast.show(mContext, getString(R.string.toast_delete_successful));
+                    }
+                });
+                Button action_cancel = dialogView.findViewById(R.id.action_cancel);
+                action_cancel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        bottomSheetDialog.cancel();
+                    }
+                });
+                bottomSheetDialog.setContentView(dialogView);
+                bottomSheetDialog.show();
+            }
+        });
+
+        tv2_menu_edit = dialogView.findViewById(R.id.tv2_menu_edit);
+        if (args.equals("0")) {
+            tv2_menu_edit.setVisibility(View.VISIBLE);
+            tv2_menu_edit.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    bottomSheetDialog.cancel();
+                    showEditDialog(adapterRecord, recordList, location);
+                }
+            });
+        }
+
+        bottomSheetDialog.setContentView(dialogView);
+        bottomSheetDialog.show();
+    }
+
+    private void showEditDialog(final Adapter_Record adapterRecord, List<Record> recordList, int location) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        View dialogView = View.inflate(mContext, R.layout.dialog_edit, null);
+
+        final Record record = recordList.get(location);
+        final EditText editText = dialogView.findViewById(R.id.dialog_edit);
+
+        editText.setHint(R.string.dialog_title_hint);
+        editText.setText(record.getTitle());
+
+        builder.setView(dialogView);
+        builder.setTitle(R.string.menu_edit);
+        builder.setPositiveButton(R.string.app_ok, new DialogInterface.OnClickListener() {
+
+            public void onClick(DialogInterface dialog, int whichButton) {
+
+                String text = editText.getText().toString().trim();
+                if (text.isEmpty()) {
+                    NinjaToast.show(mContext, getString(R.string.toast_input_empty));
+                }
+
+                RecordAction action = new RecordAction(mContext);
+                action.open(true);
+                record.setTitle(text);
+                action.updateBookmark(record);
+                action.close();
+
+                adapterRecord.notifyDataSetChanged();
+                hideSoftInput(editText);
+            }
+        });
+        builder.setNegativeButton(R.string.app_cancel, new DialogInterface.OnClickListener() {
+
+            public void onClick(DialogInterface dialog, int whichButton) {
+                dialog.cancel();
+                hideSoftInput(editText);
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        showSoftInput(editText);
+    }
+
+    private void showEditDialog(final GridItem gridItem) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        View dialogView = View.inflate(mContext, R.layout.dialog_edit, null);
+
+        final EditText editText = dialogView.findViewById(R.id.dialog_edit);
+
+        editText.setHint(R.string.dialog_title_hint);
+        editText.setText(gridItem.getTitle());
+
+        builder.setView(dialogView);
+        builder.setTitle(R.string.menu_edit);
+        builder.setPositiveButton(R.string.app_ok, new DialogInterface.OnClickListener() {
+
+            public void onClick(DialogInterface dialog, int whichButton) {
+
+                String text = editText.getText().toString().trim();
+                if (text.isEmpty()) {
+                    NinjaToast.show(mContext, getString(R.string.toast_input_empty));
+                } else {
+                    RecordAction action = new RecordAction(mContext);
+                    action.open(true);
+                    gridItem.setTitle(text);
+                    action.updateGridItem(gridItem);
+                    action.close();
+                    hideSoftInput(editText);
+                }
+            }
+        });
+        builder.setNegativeButton(R.string.app_cancel, new DialogInterface.OnClickListener() {
+
+            public void onClick(DialogInterface dialog, int whichButton) {
+                dialog.cancel();
+                hideSoftInput(editText);
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        showSoftInput(editText);
+    }
+
+    private void showSoftInput(final EditText view) {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                view.requestFocus();
+                InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                assert imm != null;
+                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+            }
+        }, 250);
+    }
+
+    private void hideSoftInput(final EditText view) {
+        view.clearFocus();
+        InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+        assert imm != null;
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    public static CommonFragment newInstance(String type) {
+        CommonFragment tabFragment = new CommonFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString("type", type);
+        tabFragment.setArguments(bundle);
+        return tabFragment;
+    }
+}

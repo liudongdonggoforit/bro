@@ -1,0 +1,13 @@
+package com.sh.browser.interfaces;
+
+/**
+ * Created by admin on 2017/3/19.
+ */
+public interface OnViewHolderStatChanageListener {
+
+    void onItemSelectedDrag();
+
+    void onItemSelectedSwiped();
+
+    void onItemNormal();
+}

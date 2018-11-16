@@ -1,0 +1,256 @@
+package com.sh.browser.adapter;
+
+import android.content.Context;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.sh.browser.R;
+import com.sh.browser.models.Artical;
+import com.sh.browser.utils.UCUtils;
+import com.squareup.picasso.Picasso;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class PsychicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    public List<Artical> datas = new ArrayList<>();
+    private Context mContext;
+    private boolean isNoData = false;
+    public static enum ITEM_TYPE {
+        ITEM_TYPE_ZERO,
+        ITEM_TYPE_ONE,
+        ITEM_TYPE_THREE,
+        ITEM_TYPE_FOOTER,
+        ITEM_TYPE_NOFOOTER
+    }
+
+    public interface OnItemClickListener {
+        void onItemClick(View view, int position);
+
+        void onItemLongClick(View view, int position);
+    }
+
+    public PsychicAdapter(List<Artical> datas, Context context) {
+        this.datas = datas;
+        this.mContext = context;
+    }
+
+    private OnItemClickListener onItemClickListener;
+
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.onItemClickListener = onItemClickListener;
+    }
+
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == ITEM_TYPE.ITEM_TYPE_ZERO.ordinal()) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_artical_ziro, parent, false);
+            return new TextViewHolder(view);
+        } else if (viewType == ITEM_TYPE.ITEM_TYPE_ONE.ordinal()){
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_artical_one, parent, false);
+            return new OneImgViewHolder(view);
+        } else if (viewType == ITEM_TYPE.ITEM_TYPE_FOOTER.ordinal()) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_foot, parent,
+                    false);
+            return new FootViewHolder(view);
+        } else if (viewType == ITEM_TYPE.ITEM_TYPE_NOFOOTER.ordinal()) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_foot_nodata,parent, false);
+            return new NoFootViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_artical_three, parent, false);
+            return new ThreeImgViewHolder(view);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof TextViewHolder) {
+            ((TextViewHolder) holder).title.setText(datas.get(position).getArticle_name());
+            ((TextViewHolder) holder).source.setText(datas.get(position).getArticle_from());
+            if (datas.get(position).getComment_num() > 0) {
+                ((TextViewHolder) holder).comment.setText("" + datas.get(position).getComment_num());
+            } else {
+                ((TextViewHolder) holder).comment.setVisibility(View.INVISIBLE);
+            }
+            ((TextViewHolder) holder).time.setText(datas.get(position).getTime());
+        } else if (holder instanceof OneImgViewHolder){
+            ((OneImgViewHolder) holder).title.setText(datas.get(position).getArticle_name());
+            ((OneImgViewHolder) holder).source.setText(datas.get(position).getArticle_from());
+            if (datas.get(position).getComment_num() > 0) {
+                ((OneImgViewHolder) holder).comment.setText("" + datas.get(position).getComment_num());
+            } else {
+                ((OneImgViewHolder) holder).comment.setVisibility(View.INVISIBLE);
+            }
+            ((OneImgViewHolder) holder).time.setText(datas.get(position).getTime());
+            Picasso.with(mContext)
+                    .load(datas.get(position).getImages()[0])
+                    .fit()
+                    .placeholder(R.drawable.img_default)
+                    .error(R.drawable.img_default)
+                    .into(((OneImgViewHolder) holder).oneImg);
+        } else if (holder instanceof ThreeImgViewHolder) {
+            ((ThreeImgViewHolder) holder).title.setText(datas.get(position).getArticle_name());
+            ((ThreeImgViewHolder) holder).source.setText(datas.get(position).getArticle_from());
+            if (datas.get(position).getComment_num() > 0) {
+                ((ThreeImgViewHolder) holder).comment.setText("" + datas.get(position).getComment_num());
+            } else {
+                ((ThreeImgViewHolder) holder).comment.setVisibility(View.INVISIBLE);
+            }
+            Picasso.with(mContext)
+                    .load(datas.get(position).getImages()[0])
+                    .fit()
+                    .placeholder(R.drawable.img_default)
+                    .error(R.drawable.img_default)
+                    .into(((ThreeImgViewHolder) holder).oneImg);
+            Picasso.with(mContext)
+                    .load(datas.get(position).getImages()[1])
+                    .fit()
+                    .placeholder(R.drawable.img_default)
+                    .error(R.drawable.img_default)
+                    .into(((ThreeImgViewHolder) holder).twoImg);
+            ((ThreeImgViewHolder) holder).time.setText(getShowTime(position));
+            ((ThreeImgViewHolder) holder).threeImg.setVisibility(View.VISIBLE);
+            if (datas.get(position).getCell_type() == 2) {
+                ((ThreeImgViewHolder) holder).threeImg.setVisibility(View.INVISIBLE);
+            } else {
+                Picasso.with(mContext)
+                        .load(datas.get(position).getImages()[2])
+                        .fit()
+                        .placeholder(R.drawable.img_default)
+                        .error(R.drawable.img_default)
+                        .into(((ThreeImgViewHolder) holder).threeImg);
+            }
+        }
+        if (onItemClickListener != null) {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int position = holder.getLayoutPosition();
+                    onItemClickListener.onItemClick(holder.itemView, position);
+                }
+            });
+
+            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    int position = holder.getLayoutPosition();
+                    onItemClickListener.onItemLongClick(holder.itemView, position);
+                    return false;
+                }
+            });
+        }
+    }
+
+    private String getShowTime(int position) {
+        long time = UCUtils.getTimeStamp(datas.get(position).getTime(),"yyyy-MM-dd HH:mm:ss");
+        long currentTime = System.currentTimeMillis();
+        long deltaT = currentTime - time;
+        String timeShow = "";
+        if (deltaT < 60 * 60 *1000) {
+            timeShow = deltaT / 1000 / 60 +"分钟前";
+        } else if (deltaT < 24 * 60 * 60 * 1000) {
+            timeShow = deltaT /1000 /60 /60 + "小时前";
+        } else if (deltaT <7 * 24 * 60 * 60 * 1000) {
+            timeShow = deltaT /24 /1000 /60 /60 + "天前";
+        } else {
+            timeShow = UCUtils.getStrTime(time / 1000);
+        }
+        return timeShow;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (position< datas.size() && datas.get(position).getCell_type() == 1) {
+            return ITEM_TYPE.ITEM_TYPE_ONE.ordinal();
+        } else if (position< datas.size() && datas.get(position).getCell_type() >= 2){
+            return ITEM_TYPE.ITEM_TYPE_THREE.ordinal();
+        } else if (position + 1 == getItemCount()) {
+            if (isNoData) {
+                return ITEM_TYPE.ITEM_TYPE_NOFOOTER.ordinal();
+            } else {
+                return ITEM_TYPE.ITEM_TYPE_FOOTER.ordinal();
+            }
+        } else {
+            return ITEM_TYPE.ITEM_TYPE_ZERO.ordinal();
+        }
+    }
+
+    public void setNodata() {
+        isNoData = true;
+    }
+
+    @Override
+    public int getItemCount() {
+        return datas.size() == 0 ? 0 : datas.size() + 1;
+    }
+
+    public static class TextViewHolder extends RecyclerView.ViewHolder {
+
+        public TextView title,source,comment,time;
+        public View view;
+
+        public TextViewHolder(View itemView) {
+            super(itemView);
+            view = itemView;
+            title = (TextView) itemView.findViewById(R.id.name);
+            source = (TextView) itemView.findViewById(R.id.artical_from);
+            comment =(TextView) itemView.findViewById(R.id.artical_comment_num);
+            time = (TextView) itemView.findViewById(R.id.artical_update_time);
+        }
+    }
+
+    public static class OneImgViewHolder extends RecyclerView.ViewHolder {
+
+        public TextView title,source,comment,time;
+        public ImageView oneImg;
+        public View view;
+
+        public OneImgViewHolder(View itemView) {
+            super(itemView);
+            view = itemView;
+            title = (TextView) itemView.findViewById(R.id.name);
+            source = (TextView) itemView.findViewById(R.id.artical_from);
+            comment =(TextView) itemView.findViewById(R.id.artical_comment_num);
+            time = (TextView) itemView.findViewById(R.id.artical_update_time);
+            oneImg = (ImageView) itemView.findViewById(R.id.artical_img_one);
+        }
+    }
+
+    public static class ThreeImgViewHolder extends RecyclerView.ViewHolder {
+
+        public TextView title,source,comment,time;
+        public ImageView oneImg,twoImg, threeImg;
+        public View view;
+
+        public ThreeImgViewHolder(View itemView) {
+            super(itemView);
+            view = itemView;
+            title = (TextView) itemView.findViewById(R.id.name);
+            source = (TextView) itemView.findViewById(R.id.artical_from);
+            comment =(TextView) itemView.findViewById(R.id.artical_comment_num);
+            time = (TextView) itemView.findViewById(R.id.artical_update_time);
+            oneImg = (ImageView) itemView.findViewById(R.id.artical_img_one);
+            twoImg = (ImageView) itemView.findViewById(R.id.artical_img_two);
+            threeImg = (ImageView) itemView.findViewById(R.id.artical_img_three);
+        }
+    }
+
+    static class FootViewHolder extends RecyclerView.ViewHolder {
+
+        public FootViewHolder(View view) {
+            super(view);
+        }
+    }
+
+    static class NoFootViewHolder extends RecyclerView.ViewHolder {
+
+        public NoFootViewHolder(View view) {
+            super(view);
+        }
+    }
+
+}

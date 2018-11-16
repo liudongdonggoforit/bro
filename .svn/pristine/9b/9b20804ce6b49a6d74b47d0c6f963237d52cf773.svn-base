@@ -1,0 +1,25 @@
+package com.chile.browser.models;
+
+import com.boredream.bdvideoplayer.bean.IVideoInfo;
+
+public class VideoInfo implements IVideoInfo {
+
+    public String title;
+    public String videoPath;
+    public String picPath;
+
+    @Override
+    public String getVideoTitle() {
+        return title;
+    }
+
+    @Override
+    public String getVideoPath() {
+        return videoPath;
+    }
+
+    @Override
+    public String getPicPath() {
+        return picPath;
+    }
+}

@@ -1,0 +1,107 @@
+package com.sh.browser.models;
+
+/**
+ * Created by dong on 2017/10/14.
+ */
+
+public class Artical {
+    private int cell_type;
+    private String article_name;
+    private String article_id;
+    private int view_num;
+    private int comment_num;
+    private String time;
+    private String article_from;
+    private String[] images;
+    private long time_stamp;
+    private String desc;
+    private String base_url;
+
+    public String getBase_url() {
+        return base_url;
+    }
+
+    public void setBase_url(String base_url) {
+        this.base_url = base_url;
+    }
+
+    public int getCell_type() {
+        return cell_type;
+    }
+
+    public void setCell_type(int cell_type) {
+        this.cell_type = cell_type;
+    }
+
+    public String getArticle_name() {
+        return article_name;
+    }
+
+    public void setArticle_name(String article_name) {
+        this.article_name = article_name;
+    }
+
+    public String getArticle_id() {
+        return article_id;
+    }
+
+    public void setArticle_id(String article_id) {
+        this.article_id = article_id;
+    }
+
+    public int getView_num() {
+        return view_num;
+    }
+
+    public void setView_num(int view_num) {
+        this.view_num = view_num;
+    }
+
+    public int getComment_num() {
+        return comment_num;
+    }
+
+    public void setComment_num(int comment_num) {
+        this.comment_num = comment_num;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public String getArticle_from() {
+        return article_from;
+    }
+
+    public void setArticle_from(String article_from) {
+        this.article_from = article_from;
+    }
+
+    public String[] getImages() {
+        return images;
+    }
+
+    public void setImages(String[] images) {
+        this.images = images;
+    }
+
+    public long getTime_stamp() {
+        return time_stamp;
+    }
+
+    public void setTime_stamp(long time_stamp) {
+        this.time_stamp = time_stamp;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+}

@@ -1,0 +1,36 @@
+package com.sh.browser.activities;
+
+import com.github.chrisbanes.photoview.PhotoView;
+import com.sh.browser.R;
+import com.squareup.picasso.Picasso;
+
+
+public class BigImgActivity extends BaseActivity {
+
+    private PhotoView mIvBig;
+
+    @Override
+    protected int getContentViewResId() {
+        return R.layout.avtivity_big_img;
+    }
+
+    @Override
+    protected void initViews() {
+        super.initViews();
+        mIvBig = findViewById(R.id.iv_big);
+        String imgurl = getIntent().getStringExtra("imgurl");
+
+        Picasso.with(BigImgActivity.this)
+                .load(imgurl)
+                .placeholder(R.drawable.img_default)
+                .error(R.drawable.img_default)
+                .into(mIvBig);
+    }
+
+    @Override
+    protected void initEvents() {
+        super.initEvents();
+
+
+    }
+}

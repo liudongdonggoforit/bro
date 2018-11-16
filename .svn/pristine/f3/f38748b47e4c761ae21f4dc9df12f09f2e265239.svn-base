@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="100dp"
+    android:layout_marginBottom="10dp"
+    android:layout_marginTop="10dp"
+    android:paddingTop="2dp">
+
+    <ImageView
+        android:id="@+id/artical_img_one"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="10dp"
+        android:scaleType="fitXY"
+        android:src="@mipmap/ic_launcher"/>
+
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/artical_img_one"
+            android:lines="2"
+            android:textColor="@color/black"
+            android:layout_marginTop="3dp"
+            android:text="recyclerview" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/artical_img_one"
+            android:layout_toRightOf="@id/artical_img_one"
+            android:layout_alignBottom="@id/artical_img_one">
+
+            <TextView
+                android:id="@+id/artical_from"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/gray"
+                android:text="财经周刊" />
+
+            <TextView
+                android:id="@+id/artical_comment_num"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="30dp"
+                android:textSize="11sp"
+                android:layout_weight="1"
+                android:text="1评论" />
+
+            <TextView
+                android:id="@+id/artical_update_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/gray"
+                android:text="1分钟前" />
+
+    </LinearLayout>
+</RelativeLayout>

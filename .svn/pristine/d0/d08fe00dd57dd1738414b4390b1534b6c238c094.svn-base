@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: com.mobapphome.library:mah-encryptor-lib:1.0.1@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.mobapphome.library/mah-encryptor-lib/1.0.1/27bc4768166a39967df7115292c01607983e044a/mah-encryptor-lib-1.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.mobapphome.library/mah-encryptor-lib/1.0.1/6cf53e53eba5ac6cedff4c6945f93f69ce02ad06/mah-encryptor-lib-1.0.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

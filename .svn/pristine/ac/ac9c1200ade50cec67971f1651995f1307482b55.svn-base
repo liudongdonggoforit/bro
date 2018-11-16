@@ -1,0 +1,165 @@
+package com.sh.browser.activities;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.FragmentActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+
+import com.sh.browser.R;
+import com.sh.browser.UCAppliCation;
+import com.sh.browser.adapter.ContentFragmentAdapter;
+import com.sh.browser.adapter.URLAdapter;
+import com.sh.browser.behavior.UCViewHeaderBehavior;
+import com.sh.browser.cbhttp.MyOkHttp;
+import com.sh.browser.cbhttp.response.GsonResponseHandler;
+import com.sh.browser.fragment.BaseFragment;
+import com.sh.browser.fragment.ContentFragment;
+import com.sh.browser.models.Channel;
+import com.sh.browser.models.Channels;
+import com.sh.browser.models.URL;
+import com.sh.browser.utils.Constants;
+import com.sh.browser.views.NoScrollViewPager;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends FragmentActivity implements View.OnClickListener{
+    private TabLayout mTabLayout;
+    private NoScrollViewPager mViewPager;
+    private UCViewHeaderBehavior mUCViewHeaderBehavior;
+    private LinearLayout search;
+    private EditText contentSearch,titleSearch;
+    private RecyclerView mRecyclerView;
+    private URLAdapter urlAdapter;
+    private MyOkHttp mOkHttp;
+    private List<URL> mList;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.uc_main_view_layout);
+        mOkHttp = UCAppliCation.getInstance().getMyOkHttp();
+        mTabLayout = (TabLayout) findViewById(R.id.news_view_tab_layout);
+        mViewPager = findViewById(R.id.news_view_content_layout);
+        search = findViewById(R.id.search);
+        contentSearch = findViewById(R.id.content_search);
+        mRecyclerView = findViewById(R.id.urlRecyclerview);
+        titleSearch = findViewById(R.id.search_title);
+        search.setOnClickListener(this);
+        titleSearch.setOnClickListener(this);
+        contentSearch.setOnClickListener(this);
+        initURLS();
+        urlAdapter = new URLAdapter(MainActivity.this, mList);
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this,6));
+        mRecyclerView.setAdapter(urlAdapter);
+
+        mUCViewHeaderBehavior = (UCViewHeaderBehavior) ((CoordinatorLayout.LayoutParams) findViewById(R.id.news_view_header_layout).getLayoutParams()).getBehavior();
+        initViewData();
+        registReceiver();
+    }
+
+    private void initURLS() {
+        try {
+            JSONArray array = new JSONArray(Constants.URLS);
+            mList = new ArrayList<>();
+            for (int i =0; i< 12; i++){
+                URL url = new URL();
+                JSONObject object = array.getJSONObject(i);
+                url.setPic(object.getString("icon_url"));
+                url.setTitle(object.getString("name"));
+                url.setUrl(object.getString("url"));
+                mList.add(i,url);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initViewData() {
+        mOkHttp.get().url("http://api.kcaibao.com/v1/get-channels/caibao").enqueue(new GsonResponseHandler<Channels>() {
+            @Override
+            public void onSuccess(int statusCode, Channels response) {
+                List<String> mTitles = new ArrayList<String>();
+                List<String> mIds = new ArrayList<String>();
+                for (int i = 0; i < response.getData().size(); i++){
+                    Channel channel = response.getData().get(i);
+                    mTitles.add(i, channel.getChannel_name());
+                    mIds.add(i, channel.getChannel_id());
+                }
+                List<BaseFragment> fragments = new ArrayList<>();
+                for (int i = 0; i < 5; i++){
+                    fragments.add(ContentFragment.newInstance(mTitles.get(i), mIds.get(i)));
+                }
+                mTabLayout.setTabMode(TabLayout.MODE_FIXED);
+                ContentFragmentAdapter adapter = new ContentFragmentAdapter(fragments, getSupportFragmentManager());
+                mViewPager.setAdapter(adapter);
+                mTabLayout.setupWithViewPager(mViewPager);
+            }
+
+            @Override
+            public void onFailure(int statusCode, String error_msg) {
+
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+
+        if (mUCViewHeaderBehavior.isClosed()) {
+            mUCViewHeaderBehavior.openPager();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(Constants.BROADCAST_ISCLOSED)) {
+                mViewPager.setScroll(intent.getBooleanExtra("isclose", false));
+            }
+        }
+    };
+
+    /**
+     * 注册广播
+     */
+    private void registReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.BROADCAST_ISCLOSED);
+        registerReceiver(mReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mReceiver);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.search:
+            case R.id.search_title:
+            case R.id.content_search:
+                Intent intent = new Intent(MainActivity.this, BrowserActivity.class);
+                startActivity(intent);
+                break;
+        }
+    }
+}

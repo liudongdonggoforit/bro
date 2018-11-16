@@ -1,0 +1,143 @@
+package com.sh.browser.activities;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
+import android.view.View;
+
+import com.sh.browser.R;
+import com.sh.browser.fragment.BrowserFragment;
+import com.sh.browser.fragment.MainFragment;
+import com.sh.browser.fragment.MineFragment;
+import com.sh.browser.fragment.VideosFragment;
+import com.sh.browser.fragment.WindowsFragment;
+import com.sh.browser.interfaces.ISearch;
+import com.sh.browser.interfaces.OnPress;
+import com.sh.browser.interfaces.SearchBrowser;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 项目主页功能分化处理
+ */
+public class MainActivity_F extends BaseActivity implements View.OnClickListener, SearchBrowser {
+
+    private View[] mBottom;
+    private final Class[] mFragments = new Class[]{MainFragment.class, VideosFragment.class, WindowsFragment.class, MineFragment.class, BrowserFragment.class};
+    private final Map<Integer, Fragment> mFragmentMaps = new HashMap<Integer, Fragment>();
+    private int mCurrentSelectedFragmentPosition = -1;
+    //首页MainFragment返回键处理
+    public OnPress onPress;
+    public ISearch iSearch;
+
+    @Override
+    protected int getContentViewResId() {
+        return R.layout.activity_main_f;
+    }
+
+    @Override
+    protected void initViews() {
+        super.initViews();
+        mBottom = new View[]{findViewById(R.id.bottom_article), findViewById(R.id.bottom_video), findViewById(R.id.bottom_window), findViewById(R.id.bottom_home)};
+        mBottom[0].setSelected(true);
+        setSelected(0);
+    }
+
+    @Override
+    protected void initEvents() {
+        super.initEvents();
+        for (int i = 0; i < mBottom.length; i++) {
+            final int temp = i;
+            mBottom[i].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setSelected(temp);
+                }
+            });
+        }
+    }
+
+    /**
+     * 底部导航栏处理
+     *
+     * @param position
+     */
+    private void setSelected(int position) {
+        if (mCurrentSelectedFragmentPosition == position) {
+            return;
+        }
+        try {
+            Fragment fragment = mFragmentMaps.get(position);
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (mCurrentSelectedFragmentPosition != -1) {
+                transaction.hide(mFragmentMaps.get(mCurrentSelectedFragmentPosition));
+            }
+            if (fragment == null) {
+                fragment = (Fragment) mFragments[position].newInstance();
+                Bundle bundle = new Bundle();
+                bundle.putString("tag", fragment.getTag());
+                bundle.putString("arg", fragment.getClass().getName());
+                fragment.setArguments(bundle);
+                mFragmentMaps.put(position, fragment);
+                transaction.add(R.id.main_content, fragment, fragment.getClass().getCanonicalName()).commit();
+            } else {
+                transaction.show(fragment);
+                transaction.commit();
+            }
+            mCurrentSelectedFragmentPosition = position;
+
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onAttachFragment(Fragment fragment) {
+        if (fragment instanceof MainFragment) {
+            onPress = (OnPress) fragment;
+        } else if (fragment instanceof BrowserFragment) {
+            iSearch = (ISearch) fragment;
+        }
+        super.onAttachFragment(fragment);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        if (onPress != null) {
+            onPress.onBackPressed();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+
+    }
+
+    @Override
+    public void jumpBrowser(String params) {
+        setSelected(4);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (resultCode) {
+            case 200:
+                String query = data.getStringExtra("query");
+                setSelected(4);
+                if (query == null || "".equals(query)) {
+                    return;
+                }
+
+                if (iSearch != null) {
+                    iSearch.search(query);
+                }
+                break;
+        }
+    }
+}

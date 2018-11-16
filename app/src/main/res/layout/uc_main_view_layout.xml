@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginBottom="-60dp"
+    android:id="@+id/uc_content">
+
+    <FrameLayout
+        android:id="@+id/news_view_title_layout"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@android:color/white"
+        app:layout_behavior="@string/behavior_ucview_title">
+
+        <LinearLayout
+            android:id="@+id/search"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="20dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="5dp"
+                android:text="奇趣头条"
+                android:textColor="@android:color/black"
+                android:textSize="22sp" />
+
+            <EditText
+                android:id="@+id/search_title"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/edit_bg"
+                android:drawableLeft="@drawable/search_icon"
+                android:drawableRight="@drawable/barcode"
+                android:paddingRight="5dp"
+                android:focusable="false"
+                android:hint=" 搜索感兴趣的内容"
+                android:textColorHint="@color/black"
+                android:paddingLeft="3dp" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- 此FrameLayout对应UCViewHeader,下面布局UCViewHeader的也支持滑动 -->
+    <android.support.v4.widget.NestedScrollView
+        android:id="@+id/news_view_header_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_behavior="@string/behavior_ucview_header">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/content_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:layout_marginLeft="30dp"
+                    android:layout_marginRight="30dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/edit_bg"
+                    android:drawableLeft="@drawable/search_icon"
+                    android:drawableRight="@drawable/barcode"
+                    android:paddingRight="5dp"
+                    android:focusable="false"
+                    android:hint=" 搜索或输入网址"
+                    android:textColorHint="@color/black"
+                    android:paddingLeft="3dp" />
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/urlRecyclerview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"></android.support.v7.widget.RecyclerView>
+            </LinearLayout>
+
+        </FrameLayout>
+    </android.support.v4.widget.NestedScrollView>
+
+    <android.support.design.widget.TabLayout
+        android:id="@+id/news_view_tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/common_height"
+        app:layout_behavior="@string/behavior_ucview_tab"
+        app:tabBackground="@color/colorPrimary"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@color/colorPrimaryDark"
+        app:tabTextColor="@android:color/white" />
+
+    <com.sh.browser.views.NoScrollViewPager
+        android:id="@+id/news_view_content_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        app:layout_behavior="@string/behavior_ucview_content" />
+</android.support.design.widget.CoordinatorLayout>

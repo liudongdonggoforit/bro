@@ -1,0 +1,37 @@
+package com.chile.browser;
+
+import android.app.Application;
+
+import com.chile.browser.cbhttp.MyOkHttp;
+
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+
+/**
+ * Created by dong on 2017/10/12.
+ */
+
+public class UCAppliCation extends Application {
+    private static UCAppliCation mInstance;
+    private MyOkHttp mMyOkHttp;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mInstance = this;
+        //自定义OkHttp
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(10000L, TimeUnit.MILLISECONDS)
+                .readTimeout(10000L, TimeUnit.MILLISECONDS)
+                .build();
+        mMyOkHttp = new MyOkHttp(okHttpClient);
+    }
+
+    public static synchronized UCAppliCation getInstance() {
+        return mInstance;
+    }
+
+    public MyOkHttp getMyOkHttp() {
+        return mMyOkHttp;
+    }
+}

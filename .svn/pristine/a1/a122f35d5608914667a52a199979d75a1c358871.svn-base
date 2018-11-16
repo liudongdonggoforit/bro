@@ -1,0 +1,517 @@
+package com.sh.browser.views;
+
+import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Message;
+import android.preference.PreferenceManager;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.View;
+import android.webkit.CookieManager;
+import android.widget.TextView;
+
+import com.sh.browser.R;
+import com.sh.browser.browser.AdBlock;
+import com.sh.browser.browser.AlbumController;
+import com.sh.browser.browser.BrowserController;
+import com.sh.browser.browser.Cookie;
+import com.sh.browser.browser.Javascript;
+import com.sh.browser.browser.NinjaClickHandler;
+import com.sh.browser.browser.NinjaDownloadListener;
+import com.sh.browser.browser.NinjaGestureListener;
+import com.sh.browser.database.Record;
+import com.sh.browser.database.RecordAction;
+import com.sh.browser.utils.BrowserUnit;
+import com.sh.browser.utils.HelperUnit;
+import com.sh.browser.utils.ViewUnit;
+import com.tencent.smtt.export.external.interfaces.WebResourceRequest;
+import com.tencent.smtt.export.external.interfaces.WebResourceResponse;
+import com.tencent.smtt.sdk.WebSettings;
+import com.tencent.smtt.sdk.WebView;
+import com.tencent.smtt.sdk.WebViewClient;
+
+import java.io.ByteArrayInputStream;
+import java.net.URISyntaxException;
+
+import static android.content.ContentValues.TAG;
+
+public class NinjaWebView extends WebView implements AlbumController {
+
+    private OnScrollChangeListener onScrollChangeListener;
+    private boolean white = true;
+    private WebViewClient client = new WebViewClient() {
+        /**
+         * 防止加载网页时调起系统浏览器
+         */
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            view.loadUrl(url);
+            return true;
+        }
+
+        @Override
+        public void onPageStarted(WebView webView, String s, Bitmap bitmap) {
+            super.onPageStarted(webView, s, bitmap);
+            if (webView.getTitle() == null || webView.getTitle().isEmpty()) {
+                update(context.getString(R.string.album_untitled), s);
+            } else {
+                update(webView.getTitle(), s);
+            }
+        }
+
+        @Override
+        public void onPageFinished(WebView webView, String s) {
+            super.onPageFinished(webView, s);
+            if (!getSettings().getLoadsImagesAutomatically()) {
+                getSettings().setLoadsImagesAutomatically(true);
+            }
+
+            if (webView.getTitle() == null || webView.getTitle().isEmpty()) {
+                update(context.getString(R.string.album_untitled), s);
+            } else {
+                update(webView.getTitle(), s);
+            }
+
+            if (sp.getBoolean("saveHistory", true)) {
+                RecordAction action = new RecordAction(context);
+
+                action.open(true);
+
+                if (action.checkHistory(s)) {
+                    action.deleteHistoryOld(s);
+                    action.addHistory(new Record(getTitle(), getUrl(), System.currentTimeMillis()));
+                } else {
+                    action.addHistory(new Record(getTitle(), getUrl(), System.currentTimeMillis()));
+                }
+
+
+                action.close();
+            }
+
+            if (isForeground()) {
+                invalidate();
+            } else {
+                postInvalidate();
+            }
+        }
+
+        private boolean handleUri(WebView webView, final Uri uri) {
+
+            Log.i(TAG, "Uri =" + uri);
+            final String url = uri.toString();
+            // Based on some condition you need to determine if you are going to load the url
+            // in your web view itself or in a browser.
+            // You can use `host` or `scheme` or any part of the `uri` to decide.
+            // open web links as usual
+
+            if (url.startsWith("http")) {
+                return false;
+            }
+
+            //try to find browse activity to handle uri
+            Uri parsedUri = Uri.parse(url);
+            PackageManager packageManager = context.getPackageManager();
+            Intent browseIntent = new Intent(Intent.ACTION_VIEW).setData(parsedUri);
+            if (browseIntent.resolveActivity(packageManager) != null) {
+                context.startActivity(browseIntent);
+                return true;
+            }
+            //if not activity found, try to parse intent://
+            if (url.startsWith("intent:")) {
+                try {
+                    Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                    if (intent.resolveActivity(context.getPackageManager()) != null) {
+                        try {
+                            context.startActivity(intent);
+                        } catch (Exception e) {
+                            NinjaToast.show(context, R.string.toast_load_error);
+                        }
+                        return true;
+                    }
+                    //try to find fallback url
+                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                    if (fallbackUrl != null) {
+                        webView.loadUrl(fallbackUrl);
+                        return true;
+                    }
+                    //invite to install
+                    Intent marketIntent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse("market://details?id=" + intent.getPackage()));
+                    if (marketIntent.resolveActivity(packageManager) != null) {
+                        context.startActivity(marketIntent);
+                        return true;
+                    }
+                } catch (URISyntaxException e) {
+                    //not an intent uri
+                }
+            }
+            white = adBlock.isWhite(url);
+            return true;//do nothing in other cases
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+            if (!white) {
+                return new WebResourceResponse(
+                        BrowserUnit.MIME_TYPE_TEXT_PLAIN,
+                        BrowserUnit.URL_ENCODING,
+                        new ByteArrayInputStream("".getBytes())
+                );
+            }
+
+            if (!sp.getBoolean(context.getString(R.string.sp_cookies), true)) {
+
+                if (getCookieHosts().isWhite(url)) {
+                    com.tencent.smtt.sdk.CookieManager manager = com.tencent.smtt.sdk.CookieManager.getInstance();
+                    manager.getCookie(url);
+                    manager.setAcceptCookie(true);
+                }  else {
+                    com.tencent.smtt.sdk.CookieManager manager = com.tencent.smtt.sdk.CookieManager.getInstance();
+                    manager.setAcceptCookie(false);
+                }
+            }
+
+            return super.shouldInterceptRequest(view, url);
+        }
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            if (!white && adBlock.isAd(request.getUrl().toString())) {
+                return new WebResourceResponse(
+                        BrowserUnit.MIME_TYPE_TEXT_PLAIN,
+                        BrowserUnit.URL_ENCODING,
+                        new ByteArrayInputStream("".getBytes())
+                );
+            }
+
+            if (!sp.getBoolean(context.getString(R.string.sp_cookies), true)) {
+
+                if (getCookieHosts().isWhite(request.getUrl().toString())) {
+                    com.tencent.smtt.sdk.CookieManager manager = com.tencent.smtt.sdk.CookieManager.getInstance();
+                    manager.getCookie(request.getUrl().toString());
+                    manager.setAcceptCookie(true);
+                }  else {
+                    com.tencent.smtt.sdk.CookieManager manager = com.tencent.smtt.sdk.CookieManager.getInstance();
+                    manager.setAcceptCookie(false);
+                }
+            }
+
+            return super.shouldInterceptRequest(view, request);
+        }
+
+    };
+    public NinjaWebView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        this.setWebViewClient(client);
+        initWebViewSettings();
+        this.getView().setClickable(true);
+    }
+
+    private void initWebViewSettings() {
+        WebSettings webSetting = getSettings();
+        webSetting.setJavaScriptEnabled(true);
+        webSetting.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSetting.setAllowFileAccess(true);
+        webSetting.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+        webSetting.setSupportZoom(true);
+        webSetting.setBuiltInZoomControls(true);
+        webSetting.setUseWideViewPort(true);
+        webSetting.setSupportMultipleWindows(true);
+        // webSetting.setLoadWithOverviewMode(true);
+        webSetting.setAppCacheEnabled(true);
+//         webSetting.setDatabaseEnabled(true);
+        webSetting.setDomStorageEnabled(true);
+        webSetting.setGeolocationEnabled(true);
+        webSetting.setAppCacheMaxSize(Long.MAX_VALUE);
+        // webSetting.setPageCacheCapacity(IX5WebSettings.DEFAULT_CACHE_CAPACITY);
+        webSetting.setPluginState(WebSettings.PluginState.ON_DEMAND);
+        // webSetting.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        webSetting.setCacheMode(WebSettings.LOAD_NO_CACHE);
+
+        webSetting.setDatabaseEnabled(true);
+
+        webSetting.setLoadWithOverviewMode(true);
+        webSetting.setUseWideViewPort(true);
+
+        webSetting.setBuiltInZoomControls(true);
+        webSetting.setDisplayZoomControls(false);
+        webSetting.setSupportZoom(true);
+
+        // this.getSettingsExtension().setPageCacheCapacity(IX5WebSettings.DEFAULT_CACHE_CAPACITY);//extension
+        // settings 的设计
+    }
+
+    @Override
+    protected void onScrollChanged(int l, int t, int old_l, int old_t) {
+        super.onScrollChanged(l, t, old_l, old_t);
+        if (onScrollChangeListener != null) {
+            onScrollChangeListener.onScrollChange(t, old_t);
+        }
+    }
+
+    public void setOnScrollChangeListener(OnScrollChangeListener onScrollChangeListener) {
+        this.onScrollChangeListener = onScrollChangeListener;
+    }
+
+    public interface OnScrollChangeListener {
+        /**
+         * Called when the scroll position of a view changes.
+         * @param scrollY    Current vertical scroll origin.
+         * @param oldScrollY Previous vertical scroll origin.
+         */
+        void onScrollChange(int scrollY, int oldScrollY);
+    }
+
+    private Context context;
+    private int flag = BrowserUnit.FLAG_NINJA;
+    private int dimen144dp;
+    private int dimen108dp;
+    private int animTime;
+
+    private Album album;
+    private NinjaDownloadListener downloadListener;
+    private NinjaClickHandler clickHandler;
+    private GestureDetector gestureDetector;
+
+    private AdBlock adBlock;
+    public AdBlock getAdBlock() {
+        return adBlock;
+    }
+
+    private Javascript javaHosts;
+    private Cookie cookieHosts;
+    public Cookie getCookieHosts() {
+        return cookieHosts;
+    }
+
+    private SharedPreferences sp;
+    private WebSettings webSettings;
+
+    private boolean foreground;
+    public boolean isForeground() {
+        return foreground;
+    }
+
+    private BrowserController browserController = null;
+    public BrowserController getBrowserController() {
+        return browserController;
+    }
+    public void setBrowserController(BrowserController browserController) {
+        this.browserController = browserController;
+        this.album.setBrowserController(browserController);
+    }
+
+    public NinjaWebView(Context context) {
+        super(context); // Cannot create a dialog, the WebView context is not an Activity
+        this.setWebViewClient(client);
+        initWebViewSettings();
+        this.getView().setClickable(true);
+        this.context = context;
+        this.dimen144dp = getResources().getDimensionPixelSize(R.dimen.layout_width_144dp);
+        this.dimen108dp = getResources().getDimensionPixelSize(R.dimen.layout_height_108dp);
+        this.animTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+        this.foreground = false;
+
+        this.adBlock = new AdBlock(this.context);
+        this.javaHosts = new Javascript(this.context);
+        this.cookieHosts = new Cookie(this.context);
+        this.album = new Album(this.context, this, this.browserController);
+        this.downloadListener = new NinjaDownloadListener(this.context);
+        this.clickHandler = new NinjaClickHandler(this);
+        this.gestureDetector = new GestureDetector(context, new NinjaGestureListener(this));
+        initPreferences();
+        initAlbum();
+    }
+
+    public synchronized void initPreferences() {
+        sp = PreferenceManager.getDefaultSharedPreferences(context);
+
+        webSettings = getSettings();
+        webSettings.setTextZoom(Integer.parseInt(sp.getString("sp_fontSize", "100")));
+
+        webSettings.setAllowFileAccessFromFileURLs(sp.getBoolean(("sp_remote"), true));
+        webSettings.setAllowUniversalAccessFromFileURLs(sp.getBoolean(("sp_remote"), true));
+
+        webSettings.setBlockNetworkImage(!sp.getBoolean(context.getString(R.string.sp_images), true));
+        webSettings.setJavaScriptEnabled(sp.getBoolean(context.getString(R.string.sp_javascript), true));
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(sp.getBoolean(context.getString(R.string.sp_javascript), true));
+
+        if (sp.getBoolean(context.getString(R.string.sp_location), true)) {
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                int hasACCESS_FINE_LOCATION = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+                if (hasACCESS_FINE_LOCATION != PackageManager.PERMISSION_GRANTED) {
+                    Activity activity = (Activity) context;
+                    HelperUnit.grantPermissionsLoc(activity);
+                } else {
+                    webSettings.setGeolocationEnabled(sp.getBoolean(context.getString(R.string.sp_location), true));
+                }
+            } else {
+                webSettings.setGeolocationEnabled(sp.getBoolean(context.getString(R.string.sp_location), true));
+            }
+        }
+
+        CookieManager manager = CookieManager.getInstance();
+        manager.setAcceptCookie(sp.getBoolean(context.getString(R.string.sp_cookies), true));
+    }
+
+    private synchronized void initAlbum() {
+        album.setAlbumCover(null);
+        album.setAlbumTitle(context.getString(R.string.album_untitled));
+        album.setBrowserController(browserController);
+    }
+
+
+
+    @Override
+    public void reload() {
+
+        if (!sp.getBoolean(context.getString(R.string.sp_javascript), true)) {
+
+            if (javaHosts.isWhite(getUrl())) {
+                webSettings = getSettings();
+                webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+                webSettings.setJavaScriptEnabled(true);
+            } else {
+                webSettings = getSettings();
+                webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
+                webSettings.setJavaScriptEnabled(false);
+            }
+        }
+
+        if (!sp.getBoolean(context.getString(R.string.sp_cookies), true)) {
+
+            if (cookieHosts.isWhite(getUrl())) {
+                CookieManager manager = CookieManager.getInstance();
+                manager.getCookie(getUrl());
+                manager.setAcceptCookie(true);
+            } else {
+                CookieManager manager = CookieManager.getInstance();
+                manager.setAcceptCookie(false);
+            }
+        }
+
+        super.reload();
+    }
+
+    @Override
+    public int getFlag() {
+        return flag;
+    }
+
+    @Override
+    public void setFlag(int flag) {
+        this.flag = flag;
+    }
+
+    @Override
+    public View getAlbumView() {
+        return album.getAlbumView();
+    }
+
+    @Override
+    public void setAlbumCover(Bitmap bitmap) {
+        album.setAlbumCover(bitmap);
+    }
+
+    @Override
+    public String getAlbumTitle() {
+        return album.getAlbumTitle();
+    }
+
+    @Override
+    public void setAlbumTitle(String title) {
+        album.setAlbumTitle(title);
+    }
+
+    @Override
+    public synchronized void activate() {
+        requestFocus();
+        foreground = true;
+        album.activate();
+    }
+
+    @Override
+    public synchronized void deactivate() {
+        clearFocus();
+        foreground = false;
+        album.deactivate();
+    }
+
+    public synchronized void update(int progress) {
+        if (foreground) {
+            browserController.updateProgress(progress);
+        }
+
+        setAlbumCover(ViewUnit.capture(this, dimen144dp, dimen108dp, Bitmap.Config.RGB_565));
+        if (isLoadFinish()) {
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    setAlbumCover(ViewUnit.capture(NinjaWebView.this, dimen144dp, dimen108dp, Bitmap.Config.RGB_565));
+                }
+            }, animTime);
+
+            if (prepareRecord()) {
+                browserController.updateAutoComplete();
+            }
+        }
+    }
+
+    public synchronized void update(String title, String url) {
+        album.setAlbumTitle(title);
+        if (foreground) {
+            browserController.updateBookmarks();
+            browserController.updateInputBox(url);
+        }
+
+        try {
+            TextView omniTitle = this.getRootView().findViewById(R.id.omnibox_title);
+            omniTitle.setText(NinjaWebView.this.getTitle());
+        } catch (Exception e) {
+            Log.w("Browser", "Error updating");
+        }
+    }
+
+    @Override
+    public synchronized void destroy() {
+        stopLoading();
+        onPause();
+        clearHistory();
+        setVisibility(GONE);
+        removeAllViews();
+        destroyDrawingCache();
+        super.destroy();
+    }
+
+    public boolean isLoadFinish() {
+        return getProgress() >= BrowserUnit.PROGRESS_MAX;
+    }
+
+    public void onLongPress() {
+        Message click = clickHandler.obtainMessage();
+        if (click != null) {
+            click.setTarget(clickHandler);
+        }
+        requestFocusNodeHref(click);
+    }
+
+    private boolean prepareRecord() {
+        String title = getTitle();
+        String url = getUrl();
+
+        return !(title == null
+                || title.isEmpty()
+                || url == null
+                || url.isEmpty()
+                || url.startsWith(BrowserUnit.URL_SCHEME_ABOUT)
+                || url.startsWith(BrowserUnit.URL_SCHEME_MAIL_TO)
+                || url.startsWith(BrowserUnit.URL_SCHEME_INTENT));
+    }
+}
