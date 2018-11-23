@@ -4,16 +4,21 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentTransaction;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.sh.browser.R;
 import com.sh.browser.interfaces.ItransactionFragment;
+import com.sh.browser.views.CommonPopupWindow;
+import com.sh.browser.views.CommonPopupWindow.LayoutGravity;
 import com.sh.browser.views.NinjaToast;
 import com.sh.browser.views.flowlayout.FlowLayout;
 import com.sh.browser.views.flowlayout.TagAdapter;
@@ -26,10 +31,13 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
 
     private EditText search;
     private TextView cancel;
+    private ImageView search_left;
     private String[] values = new String[]{"周冬雨想养个鸭子", "池子圈吴亦凡粉丝", "张一山耍大牌", "韩红斥山寨林俊杰"};
 
     private TagFlowLayout mFlowLayout;
     private ItransactionFragment itransactionFragment;
+    private CommonPopupWindow window;
+    private LayoutGravity layoutGravity;
 
     @Nullable
     @Override
@@ -43,8 +51,49 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
         search = mView.findViewById(R.id.search);
         cancel = mView.findViewById(R.id.cancel);
         mFlowLayout = mView.findViewById(R.id.flowlayout);
+        search_left = mView.findViewById(R.id.search_left);
+        window=new CommonPopupWindow(mContext, R.layout.popup_search, ViewGroup.LayoutParams.MATCH_PARENT, 160) {
+            @Override
+            protected void initView() {
+                View view=getContentView();
+                LinearLayout search_all = view.findViewById(R.id.search_all);
+                LinearLayout search_baidu = view.findViewById(R.id.search_baidu);
+                LinearLayout search_google = view.findViewById(R.id.search_google);
+
+                search_all.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        search_left.setImageResource(R.drawable.search_left);
+                        window.dismiss();
+                    }
+                });
+
+                search_baidu.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        search_left.setImageResource(R.drawable.baidu_icon);
+                        window.dismiss();
+                    }
+                });
+
+                search_google.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        search_left.setImageResource(R.drawable.google);
+                        window.dismiss();
+                    }
+                });
+
+            }
+
+            @Override
+            protected void initEvent() {}
+        };
+        layoutGravity=new LayoutGravity(LayoutGravity.ALIGN_LEFT|LayoutGravity.TO_BOTTOM);
+
         search.setOnClickListener(this);
         cancel.setOnClickListener(this);
+        search_left.setOnClickListener(this);
         showSoftInput(search);
 
         mFlowLayout.setOnTagClickListener(new TagFlowLayout.OnTagClickListener() {
@@ -52,13 +101,9 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
             public boolean onTagClick(View view, int position, FlowLayout parent) {
                 Bundle bundle = new Bundle();
                 bundle.putString("query",values[position]);
+                bundle.putBoolean("search",true);
                 itransactionFragment.transcationFragment(5,bundle);
                 hideSoftInput(search);
-//                Intent intent = new Intent(SearchFragment.this, MainActivity_F.class);
-//                intent.putExtra("query",values[position]);
-//                setResult(200,intent);
-//                hideSoftInput(search);
-//                finish();
                 return false;
             }
         });
@@ -81,15 +126,17 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
                     NinjaToast.show(mContext, getString(R.string.toast_input_empty));
                     return true;
                 }
-
-//                Intent intent = new Intent(mContext, MainActivity_F.class);
-//                intent.putExtra("query",query);
-//                setResult(200,intent);
-//                hideSoftInput(search);
-//                finish();
+                Bundle bundle = new Bundle();
+                bundle.putString("query",query);
+                bundle.putBoolean("search",true);
+                itransactionFragment.transcationFragment(5,bundle);
+                hideSoftInput(search);
                 return false;
             }
         });
+
+        FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+        transaction.add(R.id.history_contain, CommonFragment.newInstance("1")).commit();
     }
 
     @Override
@@ -100,6 +147,10 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
             case R.id.cancel:
                 itransactionFragment.transcationFragment(4,null);
                 hideSoftInput(search);
+                break;
+            case R.id.search_left:
+                layoutGravity.setHoriGravity(LayoutGravity.CENTER_HORI);
+                window.showBashOfAnchor(search_left, layoutGravity, 0, 0);
                 break;
         }
     }

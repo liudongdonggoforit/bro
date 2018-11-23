@@ -19,12 +19,14 @@ public abstract class BaseActivity extends FragmentActivity {
     /**
      * 加载状态 0：加载失败；1：正在加载；2加载成功*/
     protected String loadingState;
+    protected Bundle savedState;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getContentViewResId() != 0){
             setContentView(getContentViewResId());
         }
+        savedState = savedInstanceState;
         initViews();
         initEvents();
 

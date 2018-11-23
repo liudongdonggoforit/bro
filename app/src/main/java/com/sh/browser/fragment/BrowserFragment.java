@@ -44,8 +44,8 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -55,6 +55,7 @@ import android.widget.VideoView;
 
 import com.google.zxing.activity.CaptureActivity;
 import com.sh.browser.R;
+import com.sh.browser.activities.MainActivity_F;
 import com.sh.browser.browser.AdBlock;
 import com.sh.browser.browser.AlbumController;
 import com.sh.browser.browser.BrowserContainer;
@@ -92,18 +93,17 @@ import static com.sh.browser.activities.Main.REQ_QRCODE;
 /**
  * 浏览器页面
  */
-public class BrowserFragment extends BaseFragment implements BrowserController,View.OnClickListener,ICanGo, ISearch {
+public class BrowserFragment extends BaseFragment implements BrowserController, View.OnClickListener, ICanGo, ISearch {
     private ImageButton searchUp;
     private ImageButton searchDown;
     private ImageButton searchCancel;
     private ImageButton omniboxRefresh;
-    private ImageButton switcherPlus;
     private AutoCompleteTextView inputBox;
     private ProgressBar progressBar;
+    private ProgressBar progressBar2;
     private EditText searchBox;
     private SwitcherPanel switcherPanel;
     private BottomSheetDialog bottomSheetDialog;
-    private HorizontalScrollView switcherScroller;
     private NinjaWebView ninjaWebView;
     private TextView omniboxTitle;
     private View customView;
@@ -114,7 +114,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     private RelativeLayout omnibox;
     private RelativeLayout searchPanel;
     private FrameLayout contentFrame;
-    private LinearLayout switcherContainer;
+//    private LinearLayout switcherContainer;
     private NinjaRelativeLayout ninjaRelativeLayout;
     private FrameLayout fullscreenHolder;
     private String url;
@@ -129,7 +129,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             0, 0, 0, 1.0f, 0     // Alpha
     };
 
-    private boolean prepareRecord() {
+    public boolean prepareRecord() {
         if (currentAlbumController == null || !(currentAlbumController instanceof NinjaWebView)) {
             return true;
         }
@@ -144,6 +144,15 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
                 || url.startsWith(BrowserUnit.URL_SCHEME_ABOUT)
                 || url.startsWith(BrowserUnit.URL_SCHEME_MAIL_TO)
                 || url.startsWith(BrowserUnit.URL_SCHEME_INTENT));
+    }
+
+    public NinjaWebView getNinjaWebView() {
+        if (currentAlbumController == null || !(currentAlbumController instanceof NinjaWebView)) {
+            return null;
+        }
+
+        NinjaWebView webView = (NinjaWebView) currentAlbumController;
+        return webView;
     }
 
     private int originalOrientation;
@@ -162,8 +171,10 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
     @Override
     public void goBack() {
-        if (ninjaWebView.canGoBack()) {
+        if (ninjaWebView.canGoBack() && omnibox.getVisibility() == View.VISIBLE) {
             ninjaWebView.goBack();
+        } else {
+            iBack.back();
         }
     }
 
@@ -175,7 +186,13 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     }
 
     @Override
-    public void search(String query) {
+    public void search(String query, boolean search) {
+        Log.i("currenttime","time: " + System.currentTimeMillis());
+        if (search) {
+            omnibox.setVisibility(View.VISIBLE);
+        } else {
+            omnibox.setVisibility(View.GONE);
+        }
         updateAlbum(query);
     }
 
@@ -193,10 +210,18 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         }
     }
 
+    /*************              窗口管理逻辑         ***************/
+    private TextView cancel;
+    private TextView clearAll;
+    private LinearLayout switcher_container;
+    private ImageView setting,add_window;
+    private RelativeLayout windows;
+
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return mView = inflater.inflate(R.layout.fragment_browser, null);
+        return mView = inflater.inflate(R.layout.fragment_bro_win, null);
     }
 
     @Override
@@ -254,9 +279,6 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             @Override
             public void onCollapsed() {
                 inputBox.clearFocus();
-                if (currentAlbumController != null) {
-                    switcherScroller.smoothScrollTo(currentAlbumController.getAlbumView().getLeft(), 0);
-                }
             }
         });
         dimen144dp = getResources().getDimensionPixelSize(R.dimen.layout_width_144dp);
@@ -277,7 +299,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             mContext.deleteDatabase("Ninja4.db");
             mContext.recreate();
         }
-
+        initWindows();
         dispatchIntent(mContext.getIntent());
 
         new Handler().postDelayed(new Runnable() {
@@ -317,6 +339,35 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
         IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
         mContext.registerReceiver(downloadReceiver, filter);
+
+
+        if (getArguments() != null && getArguments().getBoolean("iswindows")) {
+            windows.setVisibility(View.VISIBLE);
+            switcherPanel.setVisibility(View.GONE);
+        } else {
+            windows.setVisibility(View.GONE);
+            switcherPanel.setVisibility(View.VISIBLE);
+        }
+    }
+
+
+
+    /**
+     * 初始化窗口
+     */
+    private void initWindows() {
+    //        byte[] bitmaps = getArguments().getByteArray("bitmaps");
+    //        Bitmap bitmap = BitmapFactory.decodeByteArray(bitmaps,0,bitmaps.length);
+        cancel = mView.findViewById(R.id.window_back);
+        clearAll = mView.findViewById(R.id.window_all_clear);
+        switcher_container = mView.findViewById(R.id.switcher_container);
+        setting = mView.findViewById(R.id.windows_manager_setting);
+        add_window = mView.findViewById(R.id.new_window);
+        windows = mView.findViewById(R.id.windows);
+        cancel.setOnClickListener(this);
+        clearAll.setOnClickListener(this);
+        setting.setOnClickListener(this);
+        add_window.setOnClickListener(this);
     }
 
     @Override
@@ -341,6 +392,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         IntentUnit.setContext(null);
         super.onDestroy();
     }
+
 
     @Override
     public void onClick(View v) {
@@ -403,11 +455,22 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
                     } else {
                         ninjaWebView.stopLoading();
                     }
-                }  else {
+                } else {
                     NinjaToast.show(mContext, getString(R.string.toast_refresh_failed));
                 }
                 break;
-
+            case R.id.window_back:
+                windows.setVisibility(View.GONE);
+                switcherPanel.setVisibility(View.VISIBLE);
+                ((MainActivity_F)mContext).setVisible();
+                break;
+            case R.id.windows_manager_setting:
+                NinjaToast.show(mContext, "setting");
+                break;
+            case R.id.new_window:
+                addAlbum("百度一下", "http://www.baidu.com/", true, new Message());
+                updateAlbum("http://www.baidu.com/");
+                break;
             default:
                 break;
         }
@@ -430,7 +493,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     @Override
     public void onResume() {
         super.onResume();
-        Log.i("onResume"," query : " + getArguments().getString("query"));
+        Log.i("onResume", " query : " + getArguments().getString("query"));
 
         IntentUnit.setContext(mContext);
         if (create) {
@@ -563,7 +626,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
     @Override
     public synchronized void showAlbum(AlbumController controller, final boolean expand) {
-        Log.i("Main","showAlbum 123456 :: " + expand + controller);
+        Log.i("Main", "showAlbum 123456 :: " + expand + controller);
 
         if (controller == null || controller == currentAlbumController) {
             switcherPanel.expanded();
@@ -578,7 +641,6 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             contentFrame.addView(av);
         } else {
             if (contentFrame == null) {
-
                 return;
                 //itransactionFragment.transcationFragment(0,null);
             } else {
@@ -593,7 +655,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                    switcherPanel.expanded();
+                switcherPanel.expanded();
             }
         }, shortAnimTime);
     }
@@ -686,21 +748,19 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     }
 
     private void initSwitcherView() {
-        switcherScroller = mView.findViewById(R.id.switcher_scroller);
-        switcherContainer = mView.findViewById(R.id.switcher_container);
-        switcherPlus = mView.findViewById(R.id.switcher_plus);
-        switcherPlus.setOnClickListener(this);
         ninjaWebView = (NinjaWebView) currentAlbumController;
     }
 
     private void initOmnibox() {
 
         omnibox = mView.findViewById(R.id.main_omnibox);
+        omnibox.setVisibility(View.GONE);
         inputBox = mView.findViewById(R.id.main_omnibox_input);
         omniboxRefresh = mView.findViewById(R.id.omnibox_refresh);
         omniboxTitle = mView.findViewById(R.id.omnibox_title);
         progressBar = mView.findViewById(R.id.main_progress_bar);
-
+        progressBar2 = mView.findViewById(R.id.main_progress);
+        progressBar2.setVisibility(View.VISIBLE);
         inputBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -709,38 +769,38 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
                 }
             }
         });
-
-        inputBox.setOnTouchListener(new SwipeToBoundListener(omnibox, new SwipeToBoundListener.BoundCallback() {
-            private final KeyListener keyListener = inputBox.getKeyListener();
-
-            @Override
-            public boolean canSwipe() {
-                boolean ob = sp.getBoolean(getString(R.string.sp_omnibox_control), true);
-                return switcherPanel.isKeyBoardShowing() && ob;
-            }
-
-            @Override
-            public void onSwipe() {
-                inputBox.setKeyListener(null);
-                inputBox.setFocusable(false);
-                inputBox.setFocusableInTouchMode(false);
-                inputBox.clearFocus();
-            }
-
-            @Override
-            public void onBound(boolean canSwitch, boolean left) {
-                inputBox.setKeyListener(keyListener);
-                inputBox.setFocusable(true);
-                inputBox.setFocusableInTouchMode(true);
-                inputBox.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                inputBox.clearFocus();
-
-                if (canSwitch) {
-                    AlbumController controller = nextAlbumController(left);
-                    showAlbum(controller, false);
-                }
-            }
-        }));
+//
+//        inputBox.setOnTouchListener(new SwipeToBoundListener(omnibox, new SwipeToBoundListener.BoundCallback() {
+//            private final KeyListener keyListener = inputBox.getKeyListener();
+//
+//            @Override
+//            public boolean canSwipe() {
+//                boolean ob = sp.getBoolean(getString(R.string.sp_omnibox_control), true);
+//                return switcherPanel.isKeyBoardShowing() && ob;
+//            }
+//
+//            @Override
+//            public void onSwipe() {
+//                inputBox.setKeyListener(null);
+//                inputBox.setFocusable(false);
+//                inputBox.setFocusableInTouchMode(false);
+//                inputBox.clearFocus();
+//            }
+//
+//            @Override
+//            public void onBound(boolean canSwitch, boolean left) {
+//                inputBox.setKeyListener(keyListener);
+//                inputBox.setFocusable(true);
+//                inputBox.setFocusableInTouchMode(true);
+//                inputBox.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+//                inputBox.clearFocus();
+//
+//                if (canSwitch) {
+//                    AlbumController controller = nextAlbumController(left);
+//                    showAlbum(controller, false);
+//                }
+//            }
+//        }));
 
         inputBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -773,7 +833,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         searchUp = mView.findViewById(R.id.main_search_up);
         searchDown = mView.findViewById(R.id.main_search_down);
         searchCancel = mView.findViewById(R.id.main_search_cancel);
-
+        searchPanel.setVisibility(View.GONE);
         searchBox.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -848,7 +908,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
     private synchronized void addAlbum(int flag) {
 
-        showOmnibox();
+//        showOmnibox();
 
         final AlbumController holder;
         NinjaRelativeLayout layout = new NinjaRelativeLayout(mContext);
@@ -859,13 +919,13 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
         View albumView = holder.getAlbumView();
         BrowserContainer.add(holder);
-        switcherContainer.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        switcher_container.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         showAlbum(holder, true);
     }
 
     private synchronized void addAlbum(String title, final String url, final boolean foreground, final Message resultMsg) {
 
-        showOmnibox();
+//        showOmnibox();
         ninjaWebView = new NinjaWebView(mContext);
         ninjaWebView.setBrowserController(this);
         ninjaWebView.setFlag(BrowserUnit.FLAG_NINJA);
@@ -876,10 +936,10 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         if (currentAlbumController != null && (currentAlbumController instanceof NinjaWebView) && resultMsg != null) {
             int index = BrowserContainer.indexOf(currentAlbumController) + 1;
             BrowserContainer.add(ninjaWebView, index);
-            switcherContainer.addView(albumView, index, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            switcher_container.addView(albumView, index, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
         } else {
             BrowserContainer.add(ninjaWebView);
-            switcherContainer.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            switcher_container.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         }
 
         if (!foreground) {
@@ -901,10 +961,10 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     }
 
     private synchronized void pinAlbums(String url) {
-        showOmnibox();
+//        showOmnibox();
         hideSoftInput(inputBox);
         hideSearchPanel();
-        switcherContainer.removeAllViews();
+        switcher_container.removeAllViews();
 
         ninjaWebView = new NinjaWebView(mContext);
 
@@ -914,9 +974,9 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             } else if (controller instanceof NinjaRelativeLayout) {
                 ((NinjaRelativeLayout) controller).setBrowserController(this);
             }
-            switcherContainer.addView(controller.getAlbumView(), LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-            controller.getAlbumView().setVisibility(View.VISIBLE);
-            controller.deactivate();
+//            switcher_container.addView(controller.getAlbumView(), LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
+//            controller.getAlbumView().setVisibility(View.VISIBLE);
+//            controller.deactivate();
         }
 
         if (BrowserContainer.size() < 1 && url == null) {
@@ -929,9 +989,11 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
             int index = BrowserContainer.size() - 1;
             currentAlbumController = BrowserContainer.get(index);
-            contentFrame.removeAllViews();
-            contentFrame.addView((View) currentAlbumController);
-            currentAlbumController.activate();
+            if (((View) currentAlbumController).getParent() != null) {
+                contentFrame.removeAllViews();
+                contentFrame.addView((View) currentAlbumController);
+                currentAlbumController.activate();
+            }
 
             updateOmnibox();
         } else { // When url != null
@@ -943,7 +1005,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
             BrowserContainer.add(ninjaWebView);
             final View albumView = ninjaWebView.getAlbumView();
-            switcherContainer.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            switcher_container.addView(albumView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             contentFrame.removeAllViews();
             contentFrame.addView(ninjaWebView);
 
@@ -974,18 +1036,22 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
         if (currentAlbumController instanceof NinjaWebView) {
             ((NinjaWebView) currentAlbumController).loadUrl(url);
+            ((NinjaWebView) currentAlbumController).setVisibility(View.GONE);
             updateOmnibox();
+            Log.i("currenttime"," currentAlbumController time: " + System.currentTimeMillis());
         } else if (currentAlbumController instanceof NinjaRelativeLayout) {
             ninjaWebView = new NinjaWebView(mContext);
-            ninjaWebView.setVisibility(View.GONE);
-            ninjaWebView.setWebChromeClient(new com.tencent.smtt.sdk.WebChromeClient(){
+            ninjaWebView.setWebChromeClient(new com.tencent.smtt.sdk.WebChromeClient() {
                 @Override
                 public void onProgressChanged(WebView webView, int i) {
                     super.onProgressChanged(webView, i);
+                    ninjaWebView.setVisibility(View.GONE);
+                    progressBar2.setVisibility(View.VISIBLE);
+                    Log.i("currenttime"," onProgressChanged time: " + i);
+                    progressBar2.setProgress(i);
                     if (i == 100) {
+                        progressBar2.setVisibility(View.GONE);
                         ninjaWebView.setVisibility(View.VISIBLE);
-                        progressBar.setProgress(i);
-                        progressBar.setVisibility(View.VISIBLE);
                     }
                 }
             });
@@ -994,25 +1060,27 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             ninjaWebView.setAlbumTitle(getString(R.string.album_untitled));
             ViewUnit.bound(mContext, ninjaWebView);
 
-            int index = switcherContainer.indexOfChild(currentAlbumController.getAlbumView());
+            int index = switcher_container.indexOfChild(currentAlbumController.getAlbumView());
             currentAlbumController.deactivate();
-            switcherContainer.removeView(currentAlbumController.getAlbumView());
+            switcher_container.removeView(currentAlbumController.getAlbumView());
             contentFrame.removeAllViews(); ///
 
-            switcherContainer.addView(ninjaWebView.getAlbumView(), index, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            switcher_container.addView(ninjaWebView.getAlbumView(), index, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             contentFrame.addView(ninjaWebView);
             BrowserContainer.set(ninjaWebView, index);
             currentAlbumController = ninjaWebView;
             ninjaWebView.activate();
+            ninjaWebView.setVisibility(View.GONE);
             ninjaWebView.loadUrl(url);
             updateOmnibox();
+            Log.i("currenttime","end time: " + System.currentTimeMillis());
         } else {
             NinjaToast.show(mContext, getString(R.string.toast_load_error));
         }
     }
 
     private void closeTabConfirmation(final Runnable okAction) {
-        if(!sp.getBoolean("sp_close_tab_confirm", true)) {
+        if (!sp.getBoolean("sp_close_tab_confirm", true)) {
             okAction.run();
         } else {
             switcherPanel.expanded();
@@ -1045,10 +1113,10 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         if (currentAlbumController == null || BrowserContainer.size() <= 1) {
 
             if (currentAlbumController != null && currentAlbumController instanceof NinjaWebView) {
-                closeTabConfirmation( new Runnable() {
+                closeTabConfirmation(new Runnable() {
                     @Override
                     public void run() {
-                        switcherContainer.removeView(controller.getAlbumView());
+                        switcher_container.removeView(controller.getAlbumView());
                         BrowserContainer.remove(controller);
                         pinAlbums(null);
                     }
@@ -1061,25 +1129,25 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
         if (controller != currentAlbumController) {
             if (currentAlbumController instanceof NinjaWebView) {
-                closeTabConfirmation( new Runnable() {
+                closeTabConfirmation(new Runnable() {
                     @Override
                     public void run() {
-                        switcherContainer.removeView(controller.getAlbumView());
+                        switcher_container.removeView(controller.getAlbumView());
                         BrowserContainer.remove(controller);
                     }
                 });
             } else {
-                switcherContainer.removeView(controller.getAlbumView());
+                switcher_container.removeView(controller.getAlbumView());
                 BrowserContainer.remove(controller);
             }
 
 
         } else {
             if (currentAlbumController instanceof NinjaWebView) {
-                closeTabConfirmation( new Runnable() {
+                closeTabConfirmation(new Runnable() {
                     @Override
                     public void run() {
-                        switcherContainer.removeView(controller.getAlbumView());
+                        switcher_container.removeView(controller.getAlbumView());
                         int index = BrowserContainer.indexOf(controller);
                         BrowserContainer.remove(controller);
                         if (index >= BrowserContainer.size()) {
@@ -1089,7 +1157,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
                     }
                 });
             } else {
-                switcherContainer.removeView(controller.getAlbumView());
+                switcher_container.removeView(controller.getAlbumView());
                 int index = BrowserContainer.indexOf(controller);
                 BrowserContainer.remove(controller);
                 if (index >= BrowserContainer.size()) {
@@ -1102,7 +1170,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     }
 
     private void updateOmnibox() {
-
+        Log.i("currenttime","updateOmnibox time: " + System.currentTimeMillis());
         initRendering(contentFrame);
         omniboxTitle.setText(currentAlbumController.getAlbumTitle());
 
@@ -1147,7 +1215,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
                     if (sp.getString("sp_hideToolbar", "0").equals("0")) {
                         if (scrollY > oldScrollY + 25) {
                             hideOmnibox();
-                        } else if (scrollY < oldScrollY){
+                        } else if (scrollY < oldScrollY) {
                             showOmnibox();
                         }
                     } else if (sp.getString("sp_hideToolbar", "0").equals("1")) {
@@ -1210,7 +1278,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         if (resultMsg == null) {
             return;
         }
-        switcherPanel.collapsed();
+//        switcherPanel.collapsed();
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -1366,31 +1434,6 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
 
 
     private void doubleTapsQuit() {
-//        if (!sp.getBoolean("sp_close_browser_confirm", true)) {
-//            mContext.finish();
-//        } else {
-//            bottomSheetDialog = new BottomSheetDialog(mContext);
-//            View dialogView = View.inflate(mContext, R.layout.dialog_action, null);
-//            TextView textView = dialogView.findViewById(R.id.dialog_text);
-//            textView.setText(R.string.toast_quit);
-//            Button action_ok = dialogView.findViewById(R.id.action_ok);
-//            action_ok.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    mContext.finish();
-//                }
-//            });
-//            Button action_cancel = dialogView.findViewById(R.id.action_cancel);
-//            action_cancel.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    bottomSheetDialog.cancel();
-//                    switcherPanel.expanded();
-//                }
-//            });
-//            bottomSheetDialog.setContentView(dialogView);
-//            bottomSheetDialog.show();
-//        }
     }
 
     private void hideSoftInput(final EditText view) {
@@ -1401,7 +1444,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
     }
 
     private void showOmnibox() {
-        if (omnibox.getVisibility() == View.GONE && searchPanel.getVisibility()  == View.GONE) {
+        if (omnibox.getVisibility() == View.GONE && searchPanel.getVisibility() == View.GONE) {
 
             int dpValue = 56; // margin in dips
             float d = getResources().getDisplayMetrics().density;
@@ -1430,12 +1473,13 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
         }
     }
 
+
     private void hideSearchPanel() {
         hideSoftInput(searchBox);
         omniboxTitle.setVisibility(View.VISIBLE);
         searchBox.setText("");
         searchPanel.setVisibility(View.GONE);
-        omnibox.setVisibility(View.VISIBLE);
+//        omnibox.setVisibility(View.VISIBLE);
     }
 
     private void setCustomFullscreen(boolean fullscreen) {
@@ -1444,7 +1488,7 @@ public class BrowserFragment extends BaseFragment implements BrowserController,V
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
         } else {
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-            showOmnibox();
+//            showOmnibox();
         }
     }
 
