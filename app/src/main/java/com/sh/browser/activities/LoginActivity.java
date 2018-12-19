@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -64,7 +65,10 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
         @Override
         public void onComplete(SHARE_MEDIA platform, int action, Map<String, String> data) {
             Intent intent = new Intent(LoginActivity.this, MainActivity_F.class);
-            startActivity(intent);
+            intent.putExtra("iconurl",data.get("iconurl"));
+            intent.putExtra("name",data.get("name"));
+            Log.i("onComplete", "iconurl :" + data.get("iconurl") + "   name: " + data.get("name"));
+            setResult(1,intent);
             finish();
         }
 
@@ -86,10 +90,6 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
          */
         @Override
         public void onCancel(SHARE_MEDIA platform, int action) {
-            // TODO: 2018/11/23 delete
-            Intent intent = new Intent(LoginActivity.this, MainActivity_F.class);
-            startActivity(intent);
-            finish();
             Toast.makeText(LoginActivity.this, "取消了", Toast.LENGTH_LONG).show();
         }
     };

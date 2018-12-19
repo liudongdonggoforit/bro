@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.google.zxing.activity.CaptureActivity;
 import com.sh.browser.R;
@@ -37,6 +38,8 @@ import com.sh.browser.models.Channel;
 import com.sh.browser.models.Channels;
 import com.sh.browser.models.URL;
 import com.sh.browser.utils.Constants;
+import com.sh.browser.utils.NetworkUtil;
+import com.sh.browser.views.BaiduProgressBar;
 import com.sh.browser.views.NoScrollViewPager;
 
 import org.json.JSONArray;
@@ -52,7 +55,7 @@ import java.util.List;
 public class MainFragment extends BaseFragment implements OnPress, View.OnClickListener {
     private TabLayout mTabLayout;
     private NoScrollViewPager mViewPager;
-    private UCViewHeaderBehavior mUCViewHeaderBehavior;
+    public UCViewHeaderBehavior mUCViewHeaderBehavior;
     private LinearLayout search;
     private EditText contentSearch, titleSearch;
     private RecyclerView mRecyclerView;
@@ -64,6 +67,9 @@ public class MainFragment extends BaseFragment implements OnPress, View.OnClickL
     private SearchBrowser searchBrowser;
     private ItransactionFragment itransactionFragment;
     private boolean mReceiverTag = false; //广播接受者标识
+    private LinearLayout no_intent,progress_bar;
+    private TextView refresh,reload;
+    private BaiduProgressBar baidu_progress;
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -80,6 +86,12 @@ public class MainFragment extends BaseFragment implements OnPress, View.OnClickL
         contentSearch = mView.findViewById(R.id.content_search);
         mRecyclerView = mView.findViewById(R.id.urlRecyclerview);
         titleSearch = mView.findViewById(R.id.search_title);
+        no_intent = mView.findViewById(R.id.no_intent);
+        progress_bar = mView.findViewById(R.id.progress_bar);
+        baidu_progress = mView.findViewById(R.id.baidu_progress);
+        refresh = mView.findViewById(R.id.refresh);
+        reload = mView.findViewById(R.id.reload);
+        reload.setVisibility(View.GONE);
         search.setOnClickListener(this);
         titleSearch.setOnClickListener(this);
         contentSearch.setOnClickListener(this);
@@ -89,6 +101,32 @@ public class MainFragment extends BaseFragment implements OnPress, View.OnClickL
         mRecyclerView.setAdapter(urlAdapter);
         mUCViewHeaderBehavior = (UCViewHeaderBehavior) ((CoordinatorLayout.LayoutParams)mView.findViewById(R.id.news_view_header_layout).getLayoutParams()).getBehavior();
         initViewData();
+        if (!NetworkUtil.isNetworkAvailable(mContext)) {
+            mViewPager.setVisibility(View.GONE);
+            no_intent.setVisibility(View.VISIBLE);
+        }else {
+            mViewPager.setVisibility(View.VISIBLE);
+            no_intent.setVisibility(View.GONE);
+        }
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!NetworkUtil.isNetworkAvailable(mContext)) {
+                    mViewPager.setVisibility(View.GONE);
+                    no_intent.setVisibility(View.VISIBLE);
+                }else {
+                    mViewPager.setVisibility(View.VISIBLE);
+                    no_intent.setVisibility(View.GONE);
+                }
+                initViewData();
+            }
+        });
+        reload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                initViewData();
+            }
+        });
         titleSearch.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -152,9 +190,15 @@ public class MainFragment extends BaseFragment implements OnPress, View.OnClickL
      * 初始化加载数据
      */
     private void initViewData() {
+        progress_bar.setVisibility(View.VISIBLE);
+        baidu_progress.setVisibility(View.VISIBLE);
+        mViewPager.setVisibility(View.GONE);
+        reload.setVisibility(View.GONE);
         mOkHttp.get().url("http://api.kcaibao.com/v1/get-channels/caibao").enqueue(new GsonResponseHandler<Channels>() {
             @Override
             public void onSuccess(int statusCode, Channels response) {
+                progress_bar.setVisibility(View.GONE);
+                mViewPager.setVisibility(View.VISIBLE);
                 List<String> mTitles = new ArrayList<String>();
                 List<String> mIds = new ArrayList<String>();
                 for (int i = 0; i < response.getData().size(); i++) {
@@ -185,7 +229,10 @@ public class MainFragment extends BaseFragment implements OnPress, View.OnClickL
 
             @Override
             public void onFailure(int statusCode, String error_msg) {
-
+                progress_bar.setVisibility(View.VISIBLE);
+                baidu_progress.setVisibility(View.GONE);
+                mViewPager.setVisibility(View.GONE);
+                reload.setVisibility(View.VISIBLE);
             }
         });
     }

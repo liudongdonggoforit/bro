@@ -12,12 +12,14 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.google.zxing.activity.CaptureActivity;
 import com.sh.browser.R;
+import com.sh.browser.behavior.UCViewHeaderBehavior;
 import com.sh.browser.database.Record;
 import com.sh.browser.database.RecordAction;
 import com.sh.browser.fragment.BaseFragment;
@@ -34,8 +36,10 @@ import com.sh.browser.interfaces.OnPress;
 import com.sh.browser.utils.BrowserUnit;
 import com.sh.browser.utils.CommonUtils;
 import com.sh.browser.utils.IntentUnit;
+import com.sh.browser.views.CustomDialog;
 import com.sh.browser.views.NinjaToast;
 import com.sh.browser.views.NinjaWebView;
+import com.squareup.picasso.Picasso;
 import com.xiao.nicevideoplayer.NiceVideoPlayerManager;
 
 import java.io.ByteArrayOutputStream;
@@ -45,10 +49,10 @@ import java.util.Map;
 /**
  * 项目主页功能分化处理
  */
-public class MainActivity_F extends BaseActivity implements View.OnClickListener, IBack, ItransactionFragment,BaseFragment.ShowUrl {
+public class MainActivity_F extends BaseActivity implements View.OnClickListener, IBack, ItransactionFragment, BaseFragment.ShowUrl {
 
     private View[] mBottom;
-    private final Class[] mFragments = new Class[]{MainFragment.class, VideoFragment.class, BrowserFragment.class, MineFragment.class, SearchFragment.class, BrowserFragment.class};
+    private final Class[] mFragments = new Class[]{MainFragment.class, VideoFragment.class, BrowserFragment.class, MineFragment.class, SearchFragment.class};
     private final Map<Integer, Fragment> mFragmentMaps = new HashMap<Integer, Fragment>();
     private int mCurrentSelectedFragmentPosition = -1;
     //首页MainFragment返回键处理
@@ -60,8 +64,27 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
     private BottomSheetDialog bottomSheetDialog;
     private boolean backTmp = false;
     private byte[] bitmaps;
-    private ImageView bottom_setting,bottom_home;
+    private Bitmap bitmap;
+    private ImageView bottom_setting, bottom_home;
     private NinjaWebView ninjaWebView;
+    private FrameLayout bottomWindow;
+    private boolean isBrowser = true;
+    private String iconUrl, userName;
+    private ImageView setting_icon;
+    private TextView setting_name;
+    private TextView bottom_window_size;
+    private View view;
+    private LinearLayout main_content;
+    private BrowserFragment browserFragment;
+    private boolean isCH = false;
+    public boolean isCHStart = false;
+    private int type = 0;
+
+    private int savePosition = 0;
+    private String ninjaUrl;
+    private String chUrl;
+    private String tmpUrl;
+    private boolean isFirstOpen = true;
 
     @Override
     protected int getContentViewResId() {
@@ -75,7 +98,11 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
         bottom_left = findViewById(R.id.bottom_left);
         bottom_right = findViewById(R.id.bottom_right);
         bottom_setting = findViewById(R.id.bottom_setting);
+        bottomWindow = findViewById(R.id.bottom_window);
+        bottomWindow.setOnClickListener(this);
         bottom_home = findViewById(R.id.bottom_home);
+        bottom_window_size = findViewById(R.id.bottom_window_size);
+        main_content = findViewById(R.id.main_content);
         bottom_setting.setOnClickListener(this);
         bottom_home.setOnClickListener(this);
         mBottom = new View[]{findViewById(R.id.bottom_article), findViewById(R.id.bottom_video), findViewById(R.id.bottom_window), findViewById(R.id.bottom_home)};
@@ -86,15 +113,16 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
             return;
         }
         setSelected(0);
+
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                Bitmap bitmap = CommonUtils.screenShot(MainActivity_F.this);
+                bitmap = CommonUtils.screenShot(MainActivity_F.this);
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
                 bitmaps = bos.toByteArray();
             }
-        },1000);
+        }, 2000);
     }
 
     @Override
@@ -108,7 +136,23 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
             mBottom[i].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    NiceVideoPlayerManager.instance().suspendNiceVideoPlayer();
                     setSelected(temp);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (temp == 2) {
+                                isBrowser = false;
+                                Fragment current = mFragmentMaps.get(mCurrentSelectedFragmentPosition);
+                                if (current != null && current instanceof BrowserFragment) {
+                                    browserFragment = (BrowserFragment) current;
+                                    ((BrowserFragment) current).setVisible();
+                                    main_bottom_nav.setVisibility(View.GONE);
+                                    //main_content.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,RelativeLayout.LayoutParams.MATCH_PARENT));
+                                }
+                            }
+                        }
+                    }, 0);
                 }
             });
         }
@@ -124,15 +168,18 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
             return;
         }
         Bundle bundle = new Bundle();
-        if (position == 2) {
-            bundle.putByteArray("bitmaps", bitmaps);
-            bundle.putBoolean("iswindows", true);
+
+        if (position == 2 && !isBrowser) {
             main_bottom_nav.setVisibility(View.GONE);
         } else {
             main_bottom_nav.setVisibility(View.VISIBLE);
         }
 
-        if (position == 5) {
+        if (position == 2) {
+            bundle.putByteArray("bitmap", bitmaps);
+        }
+
+        if (position == 3) {
             bottom_right.setVisibility(View.VISIBLE);
             bottom_left.setVisibility(View.VISIBLE);
             mBottom[0].setVisibility(View.GONE);
@@ -191,15 +238,6 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-
-        if (onPress != null) {
-            onPress.onBackPressed();
-        }
-    }
-
-    @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.bottom_left:
@@ -213,8 +251,19 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
                 break;
             case R.id.bottom_home:
                 setSelected(0);
+                Fragment current = mFragmentMaps.get(mCurrentSelectedFragmentPosition);
+                if (current instanceof MainFragment) {
+                    UCViewHeaderBehavior uCViewHeaderBehavior = ((MainFragment) current).mUCViewHeaderBehavior;
+                    if (uCViewHeaderBehavior != null && (uCViewHeaderBehavior.isClosed())) {
+                        uCViewHeaderBehavior.openPager();
+                    }
+                }
                 break;
         }
+    }
+
+    public void setWindows(int size) {
+        bottom_window_size.setText("" + size);
     }
 
     @Override
@@ -224,17 +273,71 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        Fragment current = getSupportFragmentManager().findFragmentById(R.id.main_content);
+        if (keyCode != KeyEvent.KEYCODE_BACK) {
+            return false;
+        }
+        if (chUrl != null && isCH) {
+            Intent intent = new Intent(MainActivity_F.this, CollectionAndHistoryActivity.class);
+            intent.putExtra("type", type);
+            startActivityForResult(intent, 10);
+            isCH = false;
+            if (savePosition == 2) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        setSelected(savePosition);
+                        if (tmpUrl != null) {
+                            openUrl(tmpUrl);
+                        } else {
+                            setSelected(0);
+                        }
+                    }
+                }, 0);
+            } else {
+                setSelected(savePosition);
+            }
+            return false;
+        }
+
+        Fragment current = mFragmentMaps.get(mCurrentSelectedFragmentPosition);
         if (current != null && current instanceof BrowserFragment) {
-            iCanGo.goBack();
+            NinjaWebView ninjiaWebView = ((BrowserFragment) current).getNinjaWebView();
+            if (ninjiaWebView != null && ninjiaWebView.canGoBack()) {
+                ((BrowserFragment) current).getNinjaWebView().goBack();
+            } else {
+                if (ninjiaWebView != null) {
+                    ninjiaWebView.setAlbumCover(bitmap);
+                    ninjiaWebView.setAlbumTitle("浏览器");
+//                    ninjiaWebView.setWebViewClient(new WebViewClient(){
+//                        @Override
+//                        public void doUpdateVisitedHistory(WebView webView, String s, boolean b) {
+//                            super.doUpdateVisitedHistory(webView, s, b);
+//                            webView.clearHistory();
+//                            webView.clearCache(true);
+//                        }
+//                    });
+                }
+                setSelected(0);
+            }
             return false;
         } else if (current != null && current instanceof VideoFragment) {
             if (NiceVideoPlayerManager.instance().onBackPressd()) {
+            } else {
+                setSelected(0);
+            }
+            return false;
+        } else if (current instanceof MainFragment) {
+            UCViewHeaderBehavior uCViewHeaderBehavior = ((MainFragment) current).mUCViewHeaderBehavior;
+            if (uCViewHeaderBehavior != null && (uCViewHeaderBehavior.isClosed())) {
+                uCViewHeaderBehavior.openPager();
                 return false;
             } else {
                 doubleTapsQuit();
             }
-        }else {
+        } else if (current instanceof SearchFragment) {
+            setSelected(0);
+            return false;
+        } else {
             doubleTapsQuit();
         }
         return super.onKeyDown(keyCode, event);
@@ -243,12 +346,57 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.i("onActivityResult", " requestCode :" + requestCode + "resultCode: " + resultCode);
+        if (resultCode == -1 && data != null) {
+            byte[] result = data.getByteArrayExtra(CaptureActivity.KEY_RESULT);
+            if (result == null || result.length == 0) return;
+            String query = new String(result);
+            openUrl(query);
+        } else if (resultCode == 1 && data != null) {
+            iconUrl = data.getStringExtra("iconurl");
+            userName = data.getStringExtra("name");
+        } else if (resultCode == 10 && data != null) {
+            isCH = data.getBooleanExtra("flag", false);
+            type = data.getIntExtra("type", 0);
+            chUrl = data.getStringExtra("url");
+            openUrl(chUrl);
+        } else if (isCHStart) {
+            if (savePosition == 2) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        setSelected(savePosition);
+                        if (tmpUrl != null) {
+                            openUrl(tmpUrl);
+                        } else {
+                            setSelected(0);
+                        }
+                    }
+                }, 0);
+            } else {
+                setSelected(savePosition);
+            }
+        }
     }
 
     /**
      * 设置底部导航栏显示
      */
     public void setVisible() {
+//        setSelected(0);
+        // TODO: 2018/12/4 影响第一次加载
+        main_bottom_nav.setVisibility(View.VISIBLE);
+    }
+
+    public void setBottomVisible() {
+        main_bottom_nav.setVisibility(View.VISIBLE);
+    }
+
+    public void setBottomGone() {
+        if (!isFirstOpen) {
+            setSelected(0);
+        }
+        isFirstOpen = false;
         main_bottom_nav.setVisibility(View.VISIBLE);
     }
 
@@ -258,7 +406,7 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
         if (!backTmp) {
             backTmp = true;
             setSelected(0);
-        } else if (current instanceof MainFragment){
+        } else if (current instanceof MainFragment) {
             doubleTapsQuit();
         } else {
             setSelected(0);
@@ -281,17 +429,37 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
                 setSelected(0);
                 break;
             case 5:
-                setSelected(5);
+                isBrowser = true;
+                setSelected(2);
+                final Fragment current = getSupportFragmentManager().findFragmentById(R.id.main_content);
+
+                if (current != null && current instanceof BrowserFragment) {
+                    ((BrowserFragment) current).setGone();
+                }
+
                 final String query = bundle.getString("query");
+
+                if (!isCH) {
+                    tmpUrl = query;
+                }
+
                 final boolean search = bundle.getBoolean("search");
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        if (!(current instanceof BrowserFragment)) {
+                            setSelected(2);
+                            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_content);
+
+                            if (fragment != null && fragment instanceof BrowserFragment) {
+                                ((BrowserFragment) fragment).setGone();
+                            }
+                        }
                         if (iSearch != null) {
                             iSearch.search(query, search);
                         }
                     }
-                }, 500);
+                }, 0);
                 break;
         }
     }
@@ -322,25 +490,47 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
 
     @Override
     public void openUrl(final String url) {
-        setSelected(5);
+        isBrowser = true;
+
+        if (!isCH) {
+            tmpUrl = url;
+        }
+
+        setSelected(2);
+        final Fragment current = getSupportFragmentManager().findFragmentById(R.id.main_content);
+
+        if (current != null && current instanceof BrowserFragment) {
+            ((BrowserFragment) current).setGone();
+        }
+
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+
+                if (!(current instanceof BrowserFragment)) {
+                    setSelected(2);
+                    Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_content);
+
+                    if (fragment != null && fragment instanceof BrowserFragment) {
+                        ((BrowserFragment) fragment).setGone();
+                    }
+                }
+
                 if (iSearch != null) {
                     iSearch.search(url, false);
                 }
             }
-        }, 500);
+        }, 0);
     }
 
     private void showOverSetting() {
         final Fragment current = getSupportFragmentManager().findFragmentById(R.id.main_content);
         if (current instanceof BrowserFragment) {
-            ninjaWebView = ((BrowserFragment)current).getNinjaWebView();
+            ninjaWebView = ((BrowserFragment) current).getNinjaWebView();
         }
 
         bottomSheetDialog = new BottomSheetDialog(MainActivity_F.this);
-        View view = View.inflate(MainActivity_F.this, R.layout.dialog_setting, null);
+        view = View.inflate(MainActivity_F.this, R.layout.dialog_setting, null);
         LinearLayout exit = view.findViewById(R.id.setting_exit);
         LinearLayout login = view.findViewById(R.id.setting_login);
         LinearLayout setting = view.findViewById(R.id.setting_setting);
@@ -352,28 +542,36 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
         LinearLayout yqhy = view.findViewById(R.id.setting_yqhy);
         LinearLayout sytx = view.findViewById(R.id.setting_sytx);
         LinearLayout rwzx = view.findViewById(R.id.setting_rwzx);
+        setting_name = view.findViewById(R.id.setting_name);
+        setting_icon = view.findViewById(R.id.setting_icon);
+        if (iconUrl != null) {
+            Picasso.with(MainActivity_F.this).load(iconUrl).into(setting_icon);
+            setting_name.setText(userName);
+        }
         srmx.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity_F.this,"暂未开放",Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity_F.this, "暂未开放", Toast.LENGTH_SHORT).show();
+                showRemind();
             }
         });
         yqhy.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity_F.this,"暂未开放",Toast.LENGTH_SHORT).show();
+//                Toast.makeText(MainActivity_F.this, "暂未开放", Toast.LENGTH_SHORT).show();
+                showRemind();
             }
         });
         sytx.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity_F.this,"暂未开放",Toast.LENGTH_SHORT).show();
+                showRemind();
             }
         });
         rwzx.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity_F.this,"暂未开放",Toast.LENGTH_SHORT).show();
+                showRemind();
             }
         });
         exit.setOnClickListener(new View.OnClickListener() {
@@ -428,8 +626,10 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
         scl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                savePosition = mCurrentSelectedFragmentPosition;
                 Intent intent = new Intent(MainActivity_F.this, CollectionAndHistoryActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, 10);
+                isCHStart = true;
                 bottomSheetDialog.dismiss();
             }
         });
@@ -438,11 +638,23 @@ public class MainActivity_F extends BaseActivity implements View.OnClickListener
             public void onClick(View v) {
                 bottomSheetDialog.dismiss();
                 Intent intent = new Intent(MainActivity_F.this, LoginActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, 1);
             }
         });
         bottomSheetDialog.setContentView(view);
         bottomSheetDialog.show();
+    }
+
+    private void showRemind() {
+        final CustomDialog dialog = new CustomDialog(MainActivity_F.this, R.style.customDialog, R.layout.dialog_center);
+        dialog.show();
+        TextView tvOk = dialog.findViewById(R.id.confirm);
+        tvOk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
     }
 
     private boolean prepareRecord() {

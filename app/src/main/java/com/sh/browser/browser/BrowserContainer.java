@@ -16,7 +16,6 @@ public class BrowserContainer {
         if (list.get(index) instanceof NinjaWebView) {
             ((NinjaWebView) list.get(index)).destroy();
         }
-
         list.set(index, controller);
     }
 

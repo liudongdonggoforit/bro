@@ -18,10 +18,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.sh.browser.R;
 import com.sh.browser.adapter.PsychicAdapter;
 import com.sh.browser.models.Artical;
+import com.sh.browser.utils.NetworkUtil;
+import com.sh.browser.views.BaiduProgressBar;
 import com.sh.browser.views.RecyclerViewDivider;
 
 import org.jsoup.Connection;
@@ -50,6 +53,11 @@ public class PsychicFragment extends BaseFragment {
     private static final int ON_DATA_SUCCESS_INIT = 1;
     private int index = 1;
     private AlertDialog alertDialog; //加载对话框
+    private LinearLayout progress_bar;
+    private BaiduProgressBar baidu_progress;
+    private TextView reload;
+    private LinearLayout no_intent;
+    private TextView refresh;
     private static Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -84,7 +92,21 @@ public class PsychicFragment extends BaseFragment {
         super.initViews();
         mRyMain = mView.findViewById(R.id.main_fragment);
         mSwipeRefreshLayout = mView.findViewById(R.id.swipeRefreshlayout);
+        progress_bar = mView.findViewById(R.id.progress_bar);
+        reload = mView.findViewById(R.id.reload);
+        no_intent = mView.findViewById(R.id.no_intent);
+        refresh = mView.findViewById(R.id.refresh);
+        baidu_progress = mView.findViewById(R.id.baidu_progress);
         mSwipeRefreshLayout.setEnabled(false);
+        if (!NetworkUtil.isNetworkAvailable(mContext)) {
+            no_intent.setVisibility(View.VISIBLE);
+            progress_bar.setVisibility(View.GONE);
+            mSwipeRefreshLayout.setVisibility(View.GONE);
+        } else {
+            no_intent.setVisibility(View.GONE);
+            progress_bar.setVisibility(View.VISIBLE);
+            mSwipeRefreshLayout.setVisibility(View.VISIBLE);
+        }
         itemDecoration = new RecyclerViewDivider(mContext, LinearLayout.HORIZONTAL,2, Color.parseColor("#e2e2e2"));
         layoutManager = new LinearLayoutManager(mContext);
         mRyMain.addItemDecoration(itemDecoration);
@@ -139,7 +161,6 @@ public class PsychicFragment extends BaseFragment {
                         handler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                index++;
                                 fetchData(ON_DATA_SUCCESS_INIT,"https://51qumi.com/lysj/",
                                         ++index);
                                 isLoading = false;
@@ -149,13 +170,38 @@ public class PsychicFragment extends BaseFragment {
                 }
             }
         });
+
+
+        reload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                fetchData(ON_DATA_SUCCESS_INIT,"https://www.51qumi.com/lysj/", 1);
+            }
+        });
+
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!NetworkUtil.isNetworkAvailable(mContext)) {
+                    no_intent.setVisibility(View.VISIBLE);
+                    progress_bar.setVisibility(View.GONE);
+                    mSwipeRefreshLayout.setVisibility(View.GONE);
+                } else {
+                    no_intent.setVisibility(View.GONE);
+                    progress_bar.setVisibility(View.VISIBLE);
+                    mSwipeRefreshLayout.setVisibility(View.VISIBLE);
+                }
+                fetchData(ON_DATA_SUCCESS_INIT,"https://www.51qumi.com/lysj/", 1);
+            }
+        });
     }
 
 
 
     private void fetchData(final int event, final String url, final int index) {
-        if (index ==0) {
-            showLoadingDialog();
+        if (index ==1) {
+//            showLoadingDialog();
+            progress_bar.setVisibility(View.VISIBLE);
         }
         new Thread(){
             @Override
@@ -164,7 +210,7 @@ public class PsychicFragment extends BaseFragment {
                 String qUrl = "";
                 if (index != 1) {
                     qUrl = url + "index_" + index + ".html";
-                }else {
+                } else {
                     qUrl = url + "index.html";
                 }
 
@@ -218,7 +264,9 @@ public class PsychicFragment extends BaseFragment {
                     mContext.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            dismissLoadingDialog();
+//                            dismissLoadingDialog();
+                            progress_bar.setVisibility(View.GONE);
+                            mSwipeRefreshLayout.setVisibility(View.VISIBLE);
                         }
                     });
                 } catch (IOException e) {
@@ -226,7 +274,11 @@ public class PsychicFragment extends BaseFragment {
                     mContext.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            dismissLoadingDialog();
+//                            dismissLoadingDialog();
+                            reload.setVisibility(View.VISIBLE);
+                            baidu_progress.setVisibility(View.GONE);
+                            progress_bar.setVisibility(View.VISIBLE);
+                            mSwipeRefreshLayout.setVisibility(View.GONE);
                         }
                     });
                 }
@@ -259,6 +311,20 @@ public class PsychicFragment extends BaseFragment {
     public void dismissLoadingDialog() {
         if (null != alertDialog && alertDialog.isShowing()) {
             alertDialog.dismiss();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (!NetworkUtil.isNetworkAvailable(mContext)) {
+            no_intent.setVisibility(View.VISIBLE);
+            progress_bar.setVisibility(View.GONE);
+            mSwipeRefreshLayout.setVisibility(View.GONE);
+        } else {
+            no_intent.setVisibility(View.GONE);
+            progress_bar.setVisibility(View.VISIBLE);
+            mSwipeRefreshLayout.setVisibility(View.VISIBLE);
         }
     }
 }

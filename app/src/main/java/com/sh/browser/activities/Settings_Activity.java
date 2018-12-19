@@ -33,15 +33,17 @@ public class Settings_Activity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         fragment = new Fragment_settings();
-        getFragmentManager().beginTransaction().replace(R.id.content_frame, fragment).commit();
+        getFragmentManager().beginTransaction().add(R.id.content_frame, fragment).commit();
     }
+
 
     @Override
     public void onResume() {
         super.onResume();
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (sp.getInt("restart_changed", 1) == 1) {
+        if (sp.getInt("restart_changed", 0) == 1) {
+            sp.edit().putInt("restart_changed", 0).apply();
             finish();
         }
     }

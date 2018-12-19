@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 
 import com.sh.browser.R;
 import com.sh.browser.UCAppliCation;
+import com.sh.browser.activities.MainActivity_F;
 import com.sh.browser.adapter.ContentAdapter;
 import com.sh.browser.cbhttp.MyOkHttp;
 import com.sh.browser.cbhttp.response.GsonResponseHandler;
@@ -35,6 +36,7 @@ public class ContentFragment extends BaseFragment {
     private ContentAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private boolean isLoading;
+    private LinearLayout progress_bar,no_intent;
     private Handler handler = new Handler();
     public static ContentFragment newInstance(String title, String channel_id) {
 
@@ -51,12 +53,20 @@ public class ContentFragment extends BaseFragment {
         super.initViews();
         mOkhttp = UCAppliCation.getInstance().getMyOkHttp();
         mRecyclerView = mView.findViewById(R.id.main_fragment);
+
+        progress_bar = mView.findViewById(R.id.progress_bar);
+        no_intent = mView.findViewById(R.id.no_intent);
+        progress_bar.setVisibility(View.GONE);
+        no_intent.setVisibility(View.GONE);
         mSwipeRefreshLayout = mView.findViewById(R.id.swipeRefreshlayout);
+        mSwipeRefreshLayout.setVisibility(View.VISIBLE);
         mSwipeRefreshLayout.setEnabled(false);
         itemDecoration = new RecyclerViewDivider(mContext, LinearLayout.HORIZONTAL,2, Color.parseColor("#e2e2e2"));
         mRecyclerView.addItemDecoration(itemDecoration);
         manager = new LinearLayoutManager(mContext);
         mRecyclerView.setLayoutManager(manager);
+        progress_bar.setVisibility(View.VISIBLE);
+        mSwipeRefreshLayout.setVisibility(View.GONE);
         getData(true);
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -107,6 +117,8 @@ public class ContentFragment extends BaseFragment {
                 .enqueue(new GsonResponseHandler<Articals>() {
                     @Override
                     public void onSuccess(int statusCode, Articals response) {
+                        progress_bar.setVisibility(View.GONE);
+                        mSwipeRefreshLayout.setVisibility(View.VISIBLE);
                         if (!isLoad) {
                             if (response.getData().size() == 0) {
                                 mAdapter.setNodata();
@@ -135,7 +147,8 @@ public class ContentFragment extends BaseFragment {
                                 if (articals.get(position).getCell_type() >0) {
                                     intent.putExtra("imgurl", articals.get(position).getImages()[0]);
                                 }
-                                showUrl.openUrl("http://api.kcaibao.com/article/" + articals.get(position).getArticle_id());
+                                ((MainActivity_F)mContext).openUrl("http://api.kcaibao.com/article/" + articals.get(position).getArticle_id());
+                                //showUrl.openUrl("http://api.kcaibao.com/article/" + articals.get(position).getArticle_id());
                                 Log.i("currenttime","time: " + System.currentTimeMillis());
 //                                intent.setClass(mContext, ArticalContentActivity.class);
 //                                startActivity(intent);
@@ -150,6 +163,8 @@ public class ContentFragment extends BaseFragment {
 
                     @Override
                     public void onFailure(int statusCode, String error_msg) {
+                        progress_bar.setVisibility(View.GONE);
+                        mSwipeRefreshLayout.setVisibility(View.VISIBLE);
                     }
                 });
     }

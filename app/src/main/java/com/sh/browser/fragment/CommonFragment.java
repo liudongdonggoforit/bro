@@ -20,6 +20,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.sh.browser.R;
+import com.sh.browser.activities.CollectionAndHistoryActivity;
 import com.sh.browser.activities.MainActivity_F;
 import com.sh.browser.database.Record;
 import com.sh.browser.database.RecordAction;
@@ -44,6 +45,7 @@ public class CommonFragment extends BaseFragment {
     private LinearLayout tv2_menu_delete;
     private LinearLayout tv2_menu_notification;
     private String args;
+    private int type =0;
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -59,6 +61,7 @@ public class CommonFragment extends BaseFragment {
         home_list = mView.findViewById(R.id.home_list);
         gridView = mView.findViewById(R.id.home_grid);
         if (args.equals("0")) {
+            type = 0;
             list = action.listBookmarks();
             Collections.sort(list, new Comparator<Record>() {
                 @Override
@@ -67,6 +70,7 @@ public class CommonFragment extends BaseFragment {
                 }
             });
         } else {
+            type = 1;
             list = action.listHistory();
         }
         home_list.setVisibility(View.VISIBLE);
@@ -79,9 +83,16 @@ public class CommonFragment extends BaseFragment {
         home_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(mContext, MainActivity_F.class);
-                intent.putExtra("url", list.get(position).getURL());
-                startActivity(intent);
+                if (mContext instanceof CollectionAndHistoryActivity) {
+                    Intent intent = new Intent(mContext, MainActivity_F.class);
+                    intent.putExtra("url", list.get(position).getURL());
+                    intent.putExtra("flag",true);
+                    intent.putExtra("type",type);
+                    mContext.setResult(10, intent);
+                    mContext.finish();
+                } else if (mContext instanceof MainActivity_F){
+                    ((MainActivity_F)mContext).openUrl(list.get(position).getURL());
+                }
             }
         });
 

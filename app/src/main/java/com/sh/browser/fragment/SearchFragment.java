@@ -53,6 +53,7 @@ public class SearchFragment extends BaseFragment implements View.OnClickListener
         mFlowLayout = mView.findViewById(R.id.flowlayout);
         search_left = mView.findViewById(R.id.search_left);
         window=new CommonPopupWindow(mContext, R.layout.popup_search, ViewGroup.LayoutParams.MATCH_PARENT, 160) {
+
             @Override
             protected void initView() {
                 View view=getContentView();

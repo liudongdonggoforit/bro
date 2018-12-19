@@ -61,9 +61,11 @@ public class NinjaWebView extends WebView implements AlbumController {
         @Override
         public void onPageStarted(WebView webView, String s, Bitmap bitmap) {
             super.onPageStarted(webView, s, bitmap);
+            Log.i("block_img","onPageStarted" + System.currentTimeMillis());
             if (webView.getTitle() == null || webView.getTitle().isEmpty()) {
                 update(context.getString(R.string.album_untitled), s);
             } else {
+                webView.getSettings().setBlockNetworkImage(true);
                 update(webView.getTitle(), s);
             }
         }
@@ -71,6 +73,8 @@ public class NinjaWebView extends WebView implements AlbumController {
         @Override
         public void onPageFinished(WebView webView, String s) {
             super.onPageFinished(webView, s);
+            Log.i("block_img","onPageFinished" + System.currentTimeMillis());
+            webView.getSettings().setBlockNetworkImage(false);
             if (!getSettings().getLoadsImagesAutomatically()) {
                 getSettings().setLoadsImagesAutomatically(true);
             }
@@ -92,7 +96,6 @@ public class NinjaWebView extends WebView implements AlbumController {
                 } else {
                     action.addHistory(new Record(getTitle(), getUrl(), System.currentTimeMillis()));
                 }
-
 
                 action.close();
             }
@@ -204,7 +207,6 @@ public class NinjaWebView extends WebView implements AlbumController {
                     manager.setAcceptCookie(false);
                 }
             }
-
             return super.shouldInterceptRequest(view, request);
         }
 
@@ -235,7 +237,7 @@ public class NinjaWebView extends WebView implements AlbumController {
         // webSetting.setPageCacheCapacity(IX5WebSettings.DEFAULT_CACHE_CAPACITY);
         webSetting.setPluginState(WebSettings.PluginState.ON_DEMAND);
         // webSetting.setRenderPriority(WebSettings.RenderPriority.HIGH);
-        webSetting.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        webSetting.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         webSetting.setDatabaseEnabled(true);
 
@@ -320,8 +322,8 @@ public class NinjaWebView extends WebView implements AlbumController {
         this.dimen108dp = getResources().getDimensionPixelSize(R.dimen.layout_height_108dp);
         this.animTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
         this.foreground = false;
-
-        this.adBlock = new AdBlock(this.context);
+        // TODO: 2018/12/12 oom 
+//        this.adBlock = new AdBlock(this.context);
         this.javaHosts = new Javascript(this.context);
         this.cookieHosts = new Cookie(this.context);
         this.album = new Album(this.context, this, this.browserController);
@@ -341,7 +343,7 @@ public class NinjaWebView extends WebView implements AlbumController {
         webSettings.setAllowFileAccessFromFileURLs(sp.getBoolean(("sp_remote"), true));
         webSettings.setAllowUniversalAccessFromFileURLs(sp.getBoolean(("sp_remote"), true));
 
-        webSettings.setBlockNetworkImage(!sp.getBoolean(context.getString(R.string.sp_images), true));
+//        webSettings.setBlockNetworkImage(!sp.getBoolean(context.getString(R.string.sp_images), true));
         webSettings.setJavaScriptEnabled(sp.getBoolean(context.getString(R.string.sp_javascript), true));
         webSettings.setJavaScriptCanOpenWindowsAutomatically(sp.getBoolean(context.getString(R.string.sp_javascript), true));
 

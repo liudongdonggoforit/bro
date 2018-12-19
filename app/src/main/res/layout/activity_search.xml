@@ -30,11 +30,12 @@
             android:layout_height="30dp"
             android:layout_weight="1"
             android:background="@null"
-            android:focusable="true"
             android:layout_marginLeft="-5dp"
             android:hint=" 搜索或输入网址"
             android:paddingRight="5dp"
             android:imeOptions="actionGo"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:singleLine="true"
             android:textColorHint="@color/grey"
             android:textSize="16sp" />

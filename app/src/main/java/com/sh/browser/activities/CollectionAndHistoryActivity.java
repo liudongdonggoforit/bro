@@ -36,6 +36,11 @@ public class CollectionAndHistoryActivity extends BaseActivity {
         viewPager.setAdapter(adapter);
         indicator.setViewPager(viewPager);
         setTabPagerIndicator();
+        int type = 0;
+        if(getIntent().getExtras() != null) {
+            type = getIntent().getIntExtra("type",0);
+        }
+        viewPager.setCurrentItem(type);
     }
 
     private void setTabPagerIndicator() {
